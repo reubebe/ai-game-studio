@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Play here</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #08101d; color: #c9d4e5; font: 13px -apple-system, system-ui, sans-serif; }
+  #canvas { display: block; width: 100%; height: 100%; outline: none; }
+  #status { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: #08101d; }
+  #status[hidden], #bar[hidden] { display: none; }
+  #bar { width: 240px; height: 4px; border-radius: 2px; background: #1c2a40; overflow: hidden; }
+  #fill { width: 0; height: 100%; background: #7aa7ff; transition: width 0.2s; }
+  #message { max-width: 80%; text-align: center; white-space: pre-wrap; line-height: 1.5; }
+</style>
+</head>
+<body>
+<canvas id="canvas" tabindex="0"></canvas>
+<div id="status"><div id="bar"><div id="fill"></div></div><div id="message">Loading the game…</div></div>
+<script src="__STEM__.js"></script>
+<script>
+/*__SAVES__*/
+</script>
+<script>
+// Game Studio's page for Play here: starts the Godot web build next to it and reports its output and
+// progress to the Play view, which shows them in the run console. The frame is sandboxed and has no
+// access to Game Studio itself, nor any storage: the game's saves go to the Play view, which keeps them.
+(() => {
+  const post = (data) => parent.postMessage({ source: "gamestudio-play", ...data }, "*");
+  const status = document.getElementById("status");
+  const bar = document.getElementById("bar");
+  const fill = document.getElementById("fill");
+  const message = document.getElementById("message");
+  const canvas = document.getElementById("canvas");
+  const fail = (text) => {
+    status.hidden = false;
+    bar.hidden = true;
+    message.textContent = text;
+    post({ type: "error", message: text });
+  };
+  // Villagers who answer with AI: the game (chat_bridge.gd) asks through window.gamestudio, and the
+  // question goes to Game Studio, which answers. Game Studio's self-test can ask through here too.
+  let chatReply = null;
+  let chatTest = null;
+  window.gamestudio = {
+    listen(reply, test) {
+      chatReply = reply;
+      chatTest = test;
+    },
+    ask(json) {
+      let request = null;
+      try {
+        request = JSON.parse(String(json));
+      } catch {
+        return;
+      }
+      post({ type: "npc-chat", request });
+    },
+  };
+  let savesReply = null;
+  const savesArrived = new Promise((resolve) => {
+    savesReply = resolve;
+    setTimeout(() => resolve(null), 4000);
+  });
+  // Mouse look: the game captures the pointer on a click (Esc gives it back); the Play view says so.
+  document.addEventListener("pointerlockchange", () => post({ type: "pointer", captured: document.pointerLockElement !== null }));
+  window.addEventListener("message", (e) => {
+    if (e.source !== parent || !e.data) return;
+    if (e.data.type === "focus") canvas.focus();
+    else if (e.data.type === "saves") savesReply(e.data);
+    else if (e.data.type === "npc-chat-reply" && chatReply) chatReply(JSON.stringify({ id: e.data.id, text: String(e.data.text || ""), error: String(e.data.error || "") }));
+    else if (e.data.type === "npc-chat-test" && chatTest) chatTest(JSON.stringify({ npcId: String(e.data.npcId || ""), question: String(e.data.question || "") }));
+  });
+  if (typeof Engine === "undefined") return fail("The game's engine script did not load. Build it again with Play here.");
+  const missing = Engine.getMissingFeatures({ threads: false });
+  if (missing.length) return fail("This window cannot run the game. Missing: " + missing.join(", "));
+  // Godot keeps user:// in the browser's database, which this frame lacks. Ask Game Studio for the
+  // game's saves first, stand in for the database with them, and send it every save the game makes.
+  post({ type: "saves-request" });
+  savesArrived.then((reply) => {
+    const entries = reply && Array.isArray(reply.entries) ? reply.entries : [];
+    const store = gamestudioSaveStore(entries, (batch) => post({ type: "saves-write", puts: batch.puts, deletes: batch.deletes }));
+    try {
+      Object.defineProperty(window, "indexedDB", { value: store, configurable: true });
+    } catch (err) {
+      post({ type: "printError", text: "The game's saves will not be kept: " + err });
+    }
+    if (!reply) post({ type: "printError", text: "Game Studio did not send the game's saves, so what it saves now lasts until it stops." });
+    start();
+  });
+  const start = () => {
+    const engine = new Engine({
+      executable: "__STEM__",
+      mainPack: "__STEM__.pck",
+      args: ["--", "--studio-telemetry"],
+      canvas,
+      canvasResizePolicy: 2,
+      focusCanvas: true,
+      onPrint: (...parts) => post({ type: "print", text: parts.join(" ") }),
+      onPrintError: (...parts) => {
+        const text = parts.join(" ");
+        // Godot looks for a service worker (for installable web apps); a sandboxed frame has none. Harmless here.
+        if (/Failed to assign PWA callback/.test(text)) return;
+        post({ type: "printError", text });
+      },
+      onExit: (code) => post({ type: "exit", code }),
+    });
+    engine
+      .startGame({
+        onProgress: (current, total) => {
+          if (total > 0) fill.style.width = Math.round((100 * current) / total) + "%";
+          post({ type: "progress", current, total });
+        },
+      })
+      .then(
+        () => {
+          status.hidden = true;
+          post({ type: "started" });
+        },
+        (err) => fail("The game could not start: " + String((err && err.message) || err)),
+      );
+  };
+})();
+</script>
+</body>
+</html>

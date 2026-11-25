@@ -1,0 +1,14 @@
+{
+  "name": "@gamestudio/explore",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "3D exploration template: world layout schema, rule domain, simulation host and default level",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@gamestudio/rules-core": "0.1.0",
+    "zod": "4.6.7"
+  }
+}

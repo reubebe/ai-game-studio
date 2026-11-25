@@ -1,0 +1,1845 @@
+{
+  "format": "gamestudio-rules-conformance",
+  "version": 1,
+  "scenarios": [
+    {
+      "name": "counter-threshold",
+      "description": "Variables persist across events; branch fires at the threshold.",
+      "program": {
+        "irVersion": 1,
+        "graphId": "counter",
+        "graphName": "Counter",
+        "domain": "testkit",
+        "sourceHash": "5d8c89af",
+        "domainConfig": {},
+        "variables": {
+          "hits": {
+            "type": "number",
+            "initial": 0
+          }
+        },
+        "handlers": {
+          "ping": {
+            "params": [
+              "value",
+              "label"
+            ],
+            "body": [
+              {
+                "s": "trace",
+                "node": "ping"
+              },
+              {
+                "s": "trace",
+                "node": "inc"
+              },
+              {
+                "s": "set",
+                "var": "hits",
+                "value": {
+                  "e": "op",
+                  "op": "add",
+                  "args": [
+                    {
+                      "e": "var",
+                      "name": "hits"
+                    },
+                    {
+                      "e": "const",
+                      "v": 1
+                    }
+                  ]
+                },
+                "node": "inc"
+              },
+              {
+                "s": "trace",
+                "node": "branch"
+              },
+              {
+                "s": "if",
+                "cond": {
+                  "e": "op",
+                  "op": "gte",
+                  "args": [
+                    {
+                      "e": "var",
+                      "name": "hits"
+                    },
+                    {
+                      "e": "const",
+                      "v": 2
+                    }
+                  ]
+                },
+                "then": [
+                  {
+                    "s": "trace",
+                    "node": "emit"
+                  },
+                  {
+                    "s": "call",
+                    "fn": "test.emit",
+                    "args": {
+                      "name": {
+                        "e": "const",
+                        "v": "unlocked"
+                      }
+                    },
+                    "node": "emit"
+                  }
+                ],
+                "else": [],
+                "node": "branch"
+              }
+            ]
+          }
+        }
+      },
+      "queries": {},
+      "results": {},
+      "steps": [
+        {
+          "event": "ping",
+          "payload": {
+            "value": 0,
+            "label": ""
+          },
+          "expect": {
+            "handled": true,
+            "halted": false,
+            "error": false,
+            "errorNode": null,
+            "variables": {
+              "hits": 1
+            },
+            "calls": [],
+            "logs": [],
+            "trace": [
+              "ping",
+              "inc",
+              "branch"
+            ]
+          }
+        },
+        {
+          "event": "ping",
+          "payload": {
+            "value": 0,
+            "label": ""
+          },
+          "expect": {
+            "handled": true,
+            "halted": false,
+            "error": false,
+            "errorNode": null,
+            "variables": {
+              "hits": 2
+            },
+            "calls": [
+              {
+                "fn": "test.emit",
+                "args": {
+                  "name": "unlocked"
+                }
+              }
+            ],
+            "logs": [],
+            "trace": [
+              "ping",
+              "inc",
+              "branch",
+              "emit"
+            ]
+          }
+        },
+        {
+          "event": "ping",
+          "payload": {
+            "value": 0,
+            "label": ""
+          },
+          "expect": {
+            "handled": true,
+            "halted": false,
+            "error": false,
+            "errorNode": null,
+            "variables": {
+              "hits": 3
+            },
+            "calls": [
+              {
+                "fn": "test.emit",
+                "args": {
+                  "name": "unlocked"
+                }
+              }
+            ],
+            "logs": [],
+            "trace": [
+              "ping",
+              "inc",
+              "branch",
+              "emit"
+            ]
+          }
+        },
+        {
+          "event": "start",
+          "payload": {},
+          "expect": {
+            "handled": false,
+            "halted": false,
+            "error": false,
+            "errorNode": null,
+            "variables": {
+              "hits": 3
+            },
+            "calls": [],
+            "logs": [],
+            "trace": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "text-formatting",
+      "description": "Numbers and booleans convert to text identically in every runtime.",
+      "program": {
+        "irVersion": 1,
+        "graphId": "formatting",
+        "graphName": "Formatting",
+        "domain": "testkit",
+        "sourceHash": "a5d9b9e6",
+        "domainConfig": {},
+        "variables": {
+          "label": {
+            "type": "text",
+            "initial": ""
+          }
+        },
+        "handlers": {
+          "ping": {
+            "params": [
+              "value",
+              "label"
+            ],
+            "body": [
+              {
+                "s": "trace",
+                "node": "ping"
+              },
+              {
+                "s": "trace",
+                "node": "seq"
+              },
+              {
+                "s": "trace",
+                "node": "log1"
+              },
+              {
+                "s": "call",
+                "fn": "core.log",
+                "args": {
+                  "message": {
+                    "e": "op",
+                    "op": "text",
+                    "args": [
+                      {
+                        "e": "op",
+                        "op": "div",
+                        "args": [
+                          {
+                            "e": "const",
+                            "v": 1
+                          },
+                          {
+                            "e": "const",
+                            "v": 3
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "node": "log1"
+              },
+              {
+                "s": "trace",
+                "node": "log2"
+              },
+              {
+                "s": "call",
+                "fn": "core.log",
+                "args": {
+                  "message": {
+                    "e": "op",
+                    "op": "concat",
+                    "args": [
+                      {
+                        "e": "const",
+                        "v": "value="
+                      },
+                      {
+                        "e": "op",
+                        "op": "text",
+                        "args": [
+                          {
+                            "e": "param",
+                            "name": "value"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "node": "log2"
+              },
+              {
+                "s": "trace",
+                "node": "log3"
+              },
+              {
+                "s": "call",
+                "fn": "core.log",
+                "args": {
+                  "message": {
+                    "e": "op",
+                    "op": "text",
+                    "args": [
+                      {
+                        "e": "const",
+                        "v": false
+                      }
+                    ]
+                  }
+                },
+                "node": "log3"
+              },
+              {
+                "s": "trace",
+                "node": "set"
+              },
+              {
+                "s": "set",
+                "var": "label",
+                "value": {
+                  "e": "op",
+                  "op": "text",
+                  "args": [
+                    {
+                      "e": "param",
+                      "name": "value"
+                    }
+                  ]
+                },
+                "node": "set"
+              }
+            ]
+          }
+        }
+      },
+      "queries": {},
+      "results": {},
+      "steps": [
+        {
+          "event": "ping",
+          "payload": {
+            "value": 2.5,
+            "label": ""
+          },
+          "expect": {
+            "handled": true,
+            "halted": false,
+            "error": false,
+            "errorNode": null,
+            "variables": {
+              "label": "2.5"
+            },
+            "calls": [],
+            "logs": [
+              "0.33",
+              "value=2.5",
+              "false"
+            ],
+            "trace": [
+              "ping",
+              "seq",
+              "log1",
+              "log2",
+              "log3",
+              "set"
+            ]
+          }
+        },
+        {
+          "event": "ping",
+          "payload": {
+            "value": -3,
+            "label": ""
+          },
+          "expect": {
+            "handled": true,
+            "halted": false,
+            "error": false,
+            "errorNode": null,
+            "variables": {
+              "label": "-3"
+            },
+            "calls": [],
+            "logs": [
+              "0.33",
+              "value=-3",
+              "false"
+            ],
+            "trace": [
+              "ping",
+              "seq",
+              "log1",
+              "log2",
+              "log3",
+              "set"
+            ]
+          }
+        },
+        {
+          "event": "ping",
+          "payload": {
+            "value": 0.30000000000000004,
+            "label": ""
+          },
+          "expect": {
+            "handled": true,
+            "halted": false,
+            "error": false,
+            "errorNode": null,
+            "variables": {
+              "label": "0.3"
+            },
+            "calls": [],
+            "logs": [
+              "0.33",
+              "value=0.3",
+              "false"
+            ],
+            "trace": [
+              "ping",
+              "seq",
+              "log1",
+              "log2",
+              "log3",
+              "set"
+            ]
+          }
+        },
+        {
+          "event": "ping",
+          "payload": {
+            "value": -0.125,
+            "label": ""
+          },
+          "expect": {
+            "handled": true,
+            "halted": false,
+            "error": false,
+            "errorNode": null,
+            "variables": {
+              "label": "-0.12"
+            },
+            "calls": [],
+            "logs": [
+              "0.33",
+              "value=-0.12",
+              "false"
+            ],
+            "trace": [
+              "ping",
+              "seq",
+              "log1",
+              "log2",
+              "log3",
+              "set"
+            ]
+          }
+        },
+        {
+          "event": "ping",
+          "payload": {
+            "value": 2.999,
+            "label": ""
+          },
+          "expect": {
+            "handled": true,
+            "halted": false,
+            "error": false,
+            "errorNode": null,
+            "variables": {
+              "label": "3"
+            },
+            "calls": [],
+            "logs": [
+              "0.33",
+              "value=3",
+              "false"
+            ],
+            "trace": [
+              "ping",
+              "seq",
+              "log1",
+              "log2",
+              "log3",
+              "set"
+            ]
+          }
+        },
+        {
+          "event": "ping",
+          "payload": {
+            "value": -0.001,
+            "label": ""
+          },
+          "expect": {
+            "handled": true,
+            "halted": false,
+            "error": false,
+            "errorNode": null,
+            "variables": {
+              "label": "0"
+            },
+            "calls": [],
+            "logs": [
+              "0.33",
+              "value=0",
+              "false"
+            ],
+            "trace": [
+              "ping",
+              "seq",
+              "log1",
+              "log2",
+              "log3",
+              "set"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "repeat-index",
+      "description": "Repeat runs the body count times with a zero-based index, then Done.",
+      "program": {
+        "irVersion": 1,
+        "graphId": "loops",
+        "graphName": "Loops",
+        "domain": "testkit",
+        "sourceHash": "e6180a76",
+        "domainConfig": {},
+        "variables": {
+          "total": {
+            "type": "number",
+            "initial": 0
+          }
+        },
+        "handlers": {
+          "ping": {
+            "params": [
+              "value",
+              "label"
+            ],
+            "body": [
+              {
+                "s": "trace",
+                "node": "ping"
+              },
+              {
+                "s": "trace",
+                "node": "rep"
+              },
+              {
+                "s": "repeat",
+                "count": {
+                  "e": "param",
+                  "name": "value"
+                },
+                "index": "t_rep",
+                "body": [
+                  {
+                    "s": "trace",
+                    "node": "add"
+                  },
+                  {
+                    "s": "set",
+                    "var": "total",
+                    "value": {
+                      "e": "op",
+                      "op": "add",
+                      "args": [
+                        {
+                          "e": "var",
+                          "name": "total"
+                        },
+                        {
+                          "e": "temp",
+                          "name": "t_rep",
+                          "field": "index"
+                        }
+                      ]
+                    },
+                    "node": "add"
+                  },
+                  {
+                    "s": "trace",
+                    "node": "log"
+                  },
+                  {
+                    "s": "call",
+                    "fn": "core.log",
+                    "args": {
+                      "message": {
+                        "e": "op",
+                        "op": "text",
+                        "args": [
+                          {
+                            "e": "temp",
+                            "name": "t_rep",
+                            "field": "index"
+                          }
+                        ]
+                      }
+                    },
+                    "node": "log"
+                  }
+                ],
+                "node": "rep"
+              },
+              {
+                "s": "trace",
+                "node": "done"
+              },
+              {
+                "s": "call",
+                "fn": "test.emit",
+                "args": {
+                  "name": {
+                    "e": "const",
+                    "v": "done"
+                  }
+                },
+                "node": "done"
+              }
+            ]
+          }
+        }
+      },
+      "queries": {},
+      "results": {},
+      "steps": [
+        {
+          "event": "ping",
+          "payload": {
+            "value": 4,
+            "label": ""
+          },
+          "expect": {
+            "handled": true,
+            "halted": false,
+            "error": false,
+            "errorNode": null,
+            "variables": {
+              "total": 6
+            },
+            "calls": [
+              {
+                "fn": "test.emit",
+                "args": {
+                  "name": "done"
+                }
+              }
+            ],
+            "logs": [
+              "0",
+              "1",
+              "2",
+              "3"
+            ],
+            "trace": [
+              "ping",
+              "rep",
+              "add",
+              "log",
+              "add",
+              "log",
+              "add",
+              "log",
+              "add",
+              "log",
+              "done"
+            ]
+          }
+        },
+        {
+          "event": "ping",
+          "payload": {
+            "value": 0,
+            "label": ""
+          },
+          "expect": {
+            "handled": true,
+            "halted": false,
+            "error": false,
+            "errorNode": null,
+            "variables": {
+              "total": 6
+            },
+            "calls": [
+              {
+                "fn": "test.emit",
+                "args": {
+                  "name": "done"
+                }
+              }
+            ],
+            "logs": [],
+            "trace": [
+              "ping",
+              "rep",
+              "done"
+            ]
+          }
+        },
+        {
+          "event": "ping",
+          "payload": {
+            "value": 2.7,
+            "label": ""
+          },
+          "expect": {
+            "handled": true,
+            "halted": false,
+            "error": false,
+            "errorNode": null,
+            "variables": {
+              "total": 7
+            },
+            "calls": [
+              {
+                "fn": "test.emit",
+                "args": {
+                  "name": "done"
+                }
+              }
+            ],
+            "logs": [
+              "0",
+              "1"
+            ],
+            "trace": [
+              "ping",
+              "rep",
+              "add",
+              "log",
+              "add",
+              "log",
+              "done"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "stop-halts-handler",
+      "description": "Stop ends the handler, skipping later Sequence outputs.",
+      "program": {
+        "irVersion": 1,
+        "graphId": "halting",
+        "graphName": "Halting",
+        "domain": "testkit",
+        "sourceHash": "c7d60d98",
+        "domainConfig": {},
+        "variables": {},
+        "handlers": {
+          "ping": {
+            "params": [
+              "value",
+              "label"
+            ],
+            "body": [
+              {
+                "s": "trace",
+                "node": "ping"
+              },
+              {
+                "s": "trace",
+                "node": "seq"
+              },
+              {
+                "s": "trace",
+                "node": "a"
+              },
+              {
+                "s": "call",
+                "fn": "test.emit",
+                "args": {
+                  "name": {
+                    "e": "const",
+                    "v": "before"
+                  }
+                },
+                "node": "a"
+              },
+              {
+                "s": "trace",
+                "node": "branch"
+              },
+              {
+                "s": "if",
+                "cond": {
+                  "e": "op",
+                  "op": "gt",
+                  "args": [
+                    {
+                      "e": "param",
+                      "name": "value"
+                    },
+                    {
+                      "e": "const",
+                      "v": 10
+                    }
+                  ]
+                },
+                "then": [
+                  {
+                    "s": "trace",
+                    "node": "stop"
+                  },
+                  {
+                    "s": "halt",
+                    "node": "stop"
+                  }
+                ],
+                "else": [],
+                "node": "branch"
+              },
+              {
+                "s": "trace",
+                "node": "b"
+              },
+              {
+                "s": "call",
+                "fn": "test.emit",
+                "args": {
+                  "name": {
+                    "e": "const",
+                    "v": "after"
+                  }
+                },
+                "node": "b"
+              }
+            ]
+          }
+        }
+      },
+      "queries": {},
+      "results": {},
+      "steps": [
+        {
+          "event": "ping",
+          "payload": {
+            "value": 1,
+            "label": ""
+          },
+          "expect": {
+            "handled": true,
+            "halted": false,
+            "error": false,
+            "errorNode": null,
+            "variables": {},
+            "calls": [
+              {
+                "fn": "test.emit",
+                "args": {
+                  "name": "before"
+                }
+              },
+              {
+                "fn": "test.emit",
+                "args": {
+                  "name": "after"
+                }
+              }
+            ],
+            "logs": [],
+            "trace": [
+              "ping",
+              "seq",
+              "a",
+              "branch",
+              "b"
+            ]
+          }
+        },
+        {
+          "event": "ping",
+          "payload": {
+            "value": 11,
+            "label": ""
+          },
+          "expect": {
+            "handled": true,
+            "halted": true,
+            "error": false,
+            "errorNode": null,
+            "variables": {},
+            "calls": [
+              {
+                "fn": "test.emit",
+                "args": {
+                  "name": "before"
+                }
+              }
+            ],
+            "logs": [],
+            "trace": [
+              "ping",
+              "seq",
+              "a",
+              "branch",
+              "stop"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "results-and-queries",
+      "description": "Action results and host queries feed later nodes.",
+      "program": {
+        "irVersion": 1,
+        "graphId": "results",
+        "graphName": "Results",
+        "domain": "testkit",
+        "sourceHash": "5fb830c1",
+        "domainConfig": {},
+        "variables": {},
+        "handlers": {
+          "ping": {
+            "params": [
+              "value",
+              "label"
+            ],
+            "body": [
+              {
+                "s": "trace",
+                "node": "ping"
+              },
+              {
+                "s": "trace",
+                "node": "roll"
+              },
+              {
+                "s": "call",
+                "fn": "test.roll",
+                "args": {},
+                "out": "t_roll",
+                "node": "roll"
+              },
+              {
+                "s": "trace",
+                "node": "log"
+              },
+              {
+                "s": "call",
+                "fn": "core.log",
+                "args": {
+                  "message": {
+                    "e": "op",
+                    "op": "concat",
+                    "args": [
+                      {
+                        "e": "const",
+                        "v": "double="
+                      },
+                      {
+                        "e": "op",
+                        "op": "text",
+                        "args": [
+                          {
+                            "e": "op",
+                            "op": "mul",
+                            "args": [
+                              {
+                                "e": "temp",
+                                "name": "t_roll",
+                                "field": "value"
+                              },
+                              {
+                                "e": "const",
+                                "v": 2
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "node": "log"
+              },
+              {
+                "s": "trace",
+                "node": "emit"
+              },
+              {
+                "s": "call",
+                "fn": "test.emit",
+                "args": {
+                  "name": {
+                    "e": "op",
+                    "op": "text",
+                    "args": [
+                      {
+                        "e": "query",
+                        "fn": "test.counter",
+                        "args": {
+                          "key": {
+                            "e": "param",
+                            "name": "label"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                },
+                "node": "emit"
+              }
+            ]
+          }
+        }
+      },
+      "queries": {
+        "test.counter": {
+          "by": "key",
+          "values": {
+            "gems": 7,
+            "keys": 2
+          },
+          "default": 0
+        }
+      },
+      "results": {
+        "test.roll": {
+          "value": 4.25
+        }
+      },
+      "steps": [
+        {
+          "event": "ping",
+          "payload": {
+            "value": 0,
+            "label": "gems"
+          },
+          "expect": {
+            "handled": true,
+            "halted": false,
+            "error": false,
+            "errorNode": null,
+            "variables": {},
+            "calls": [
+              {
+                "fn": "test.roll",
+                "args": {}
+              },
+              {
+                "fn": "test.emit",
+                "args": {
+                  "name": "7"
+                }
+              }
+            ],
+            "logs": [
+              "double=8.5"
+            ],
+            "trace": [
+              "ping",
+              "roll",
+              "log",
+              "emit"
+            ]
+          }
+        },
+        {
+          "event": "ping",
+          "payload": {
+            "value": 0,
+            "label": "other"
+          },
+          "expect": {
+            "handled": true,
+            "halted": false,
+            "error": false,
+            "errorNode": null,
+            "variables": {},
+            "calls": [
+              {
+                "fn": "test.roll",
+                "args": {}
+              },
+              {
+                "fn": "test.emit",
+                "args": {
+                  "name": "0"
+                }
+              }
+            ],
+            "logs": [
+              "double=8.5"
+            ],
+            "trace": [
+              "ping",
+              "roll",
+              "log",
+              "emit"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "math-and-logic",
+      "description": "Modulo, subtraction, min/max, all comparisons, text equality and boolean logic.",
+      "program": {
+        "irVersion": 1,
+        "graphId": "math",
+        "graphName": "Math",
+        "domain": "testkit",
+        "sourceHash": "a6d698fe",
+        "domainConfig": {},
+        "variables": {},
+        "handlers": {
+          "ping": {
+            "params": [
+              "value",
+              "label"
+            ],
+            "body": [
+              {
+                "s": "trace",
+                "node": "ping"
+              },
+              {
+                "s": "trace",
+                "node": "log_mod"
+              },
+              {
+                "s": "call",
+                "fn": "core.log",
+                "args": {
+                  "message": {
+                    "e": "op",
+                    "op": "text",
+                    "args": [
+                      {
+                        "e": "op",
+                        "op": "mod",
+                        "args": [
+                          {
+                            "e": "param",
+                            "name": "value"
+                          },
+                          {
+                            "e": "const",
+                            "v": 12
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "node": "log_mod"
+              },
+              {
+                "s": "trace",
+                "node": "log_sub"
+              },
+              {
+                "s": "call",
+                "fn": "core.log",
+                "args": {
+                  "message": {
+                    "e": "op",
+                    "op": "text",
+                    "args": [
+                      {
+                        "e": "op",
+                        "op": "sub",
+                        "args": [
+                          {
+                            "e": "param",
+                            "name": "value"
+                          },
+                          {
+                            "e": "const",
+                            "v": 5
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "node": "log_sub"
+              },
+              {
+                "s": "trace",
+                "node": "log_min"
+              },
+              {
+                "s": "call",
+                "fn": "core.log",
+                "args": {
+                  "message": {
+                    "e": "op",
+                    "op": "text",
+                    "args": [
+                      {
+                        "e": "op",
+                        "op": "min",
+                        "args": [
+                          {
+                            "e": "param",
+                            "name": "value"
+                          },
+                          {
+                            "e": "const",
+                            "v": 0
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "node": "log_min"
+              },
+              {
+                "s": "trace",
+                "node": "log_max"
+              },
+              {
+                "s": "call",
+                "fn": "core.log",
+                "args": {
+                  "message": {
+                    "e": "op",
+                    "op": "text",
+                    "args": [
+                      {
+                        "e": "op",
+                        "op": "max",
+                        "args": [
+                          {
+                            "e": "param",
+                            "name": "value"
+                          },
+                          {
+                            "e": "const",
+                            "v": 0
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "node": "log_max"
+              },
+              {
+                "s": "trace",
+                "node": "log_cmp_eq"
+              },
+              {
+                "s": "call",
+                "fn": "core.log",
+                "args": {
+                  "message": {
+                    "e": "op",
+                    "op": "text",
+                    "args": [
+                      {
+                        "e": "op",
+                        "op": "eq",
+                        "args": [
+                          {
+                            "e": "param",
+                            "name": "value"
+                          },
+                          {
+                            "e": "const",
+                            "v": 3
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "node": "log_cmp_eq"
+              },
+              {
+                "s": "trace",
+                "node": "log_cmp_ne"
+              },
+              {
+                "s": "call",
+                "fn": "core.log",
+                "args": {
+                  "message": {
+                    "e": "op",
+                    "op": "text",
+                    "args": [
+                      {
+                        "e": "op",
+                        "op": "neq",
+                        "args": [
+                          {
+                            "e": "param",
+                            "name": "value"
+                          },
+                          {
+                            "e": "const",
+                            "v": 3
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "node": "log_cmp_ne"
+              },
+              {
+                "s": "trace",
+                "node": "log_cmp_lt"
+              },
+              {
+                "s": "call",
+                "fn": "core.log",
+                "args": {
+                  "message": {
+                    "e": "op",
+                    "op": "text",
+                    "args": [
+                      {
+                        "e": "op",
+                        "op": "lt",
+                        "args": [
+                          {
+                            "e": "param",
+                            "name": "value"
+                          },
+                          {
+                            "e": "const",
+                            "v": 3
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "node": "log_cmp_lt"
+              },
+              {
+                "s": "trace",
+                "node": "log_cmp_le"
+              },
+              {
+                "s": "call",
+                "fn": "core.log",
+                "args": {
+                  "message": {
+                    "e": "op",
+                    "op": "text",
+                    "args": [
+                      {
+                        "e": "op",
+                        "op": "lte",
+                        "args": [
+                          {
+                            "e": "param",
+                            "name": "value"
+                          },
+                          {
+                            "e": "const",
+                            "v": 3
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "node": "log_cmp_le"
+              },
+              {
+                "s": "trace",
+                "node": "log_cmp_gt"
+              },
+              {
+                "s": "call",
+                "fn": "core.log",
+                "args": {
+                  "message": {
+                    "e": "op",
+                    "op": "text",
+                    "args": [
+                      {
+                        "e": "op",
+                        "op": "gt",
+                        "args": [
+                          {
+                            "e": "param",
+                            "name": "value"
+                          },
+                          {
+                            "e": "const",
+                            "v": 3
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "node": "log_cmp_gt"
+              },
+              {
+                "s": "trace",
+                "node": "log_cmp_ge"
+              },
+              {
+                "s": "call",
+                "fn": "core.log",
+                "args": {
+                  "message": {
+                    "e": "op",
+                    "op": "text",
+                    "args": [
+                      {
+                        "e": "op",
+                        "op": "gte",
+                        "args": [
+                          {
+                            "e": "param",
+                            "name": "value"
+                          },
+                          {
+                            "e": "const",
+                            "v": 3
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "node": "log_cmp_ge"
+              },
+              {
+                "s": "trace",
+                "node": "log_text"
+              },
+              {
+                "s": "call",
+                "fn": "core.log",
+                "args": {
+                  "message": {
+                    "e": "op",
+                    "op": "text",
+                    "args": [
+                      {
+                        "e": "op",
+                        "op": "eq",
+                        "args": [
+                          {
+                            "e": "param",
+                            "name": "label"
+                          },
+                          {
+                            "e": "const",
+                            "v": "gems"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "node": "log_text"
+              },
+              {
+                "s": "trace",
+                "node": "log_logic"
+              },
+              {
+                "s": "call",
+                "fn": "core.log",
+                "args": {
+                  "message": {
+                    "e": "op",
+                    "op": "text",
+                    "args": [
+                      {
+                        "e": "op",
+                        "op": "or",
+                        "args": [
+                          {
+                            "e": "op",
+                            "op": "and",
+                            "args": [
+                              {
+                                "e": "op",
+                                "op": "not",
+                                "args": [
+                                  {
+                                    "e": "op",
+                                    "op": "eq",
+                                    "args": [
+                                      {
+                                        "e": "param",
+                                        "name": "label"
+                                      },
+                                      {
+                                        "e": "const",
+                                        "v": "gems"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "e": "op",
+                                "op": "eq",
+                                "args": [
+                                  {
+                                    "e": "param",
+                                    "name": "label"
+                                  },
+                                  {
+                                    "e": "const",
+                                    "v": "gems"
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "e": "op",
+                            "op": "eq",
+                            "args": [
+                              {
+                                "e": "param",
+                                "name": "label"
+                              },
+                              {
+                                "e": "const",
+                                "v": "gems"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "node": "log_logic"
+              }
+            ]
+          }
+        }
+      },
+      "queries": {},
+      "results": {},
+      "steps": [
+        {
+          "event": "ping",
+          "payload": {
+            "value": -1,
+            "label": "gems"
+          },
+          "expect": {
+            "handled": true,
+            "halted": false,
+            "error": false,
+            "errorNode": null,
+            "variables": {},
+            "calls": [],
+            "logs": [
+              "11",
+              "-6",
+              "-1",
+              "0",
+              "false",
+              "true",
+              "true",
+              "true",
+              "false",
+              "false",
+              "true",
+              "true"
+            ],
+            "trace": [
+              "ping",
+              "log_mod",
+              "log_sub",
+              "log_min",
+              "log_max",
+              "log_cmp_eq",
+              "log_cmp_ne",
+              "log_cmp_lt",
+              "log_cmp_le",
+              "log_cmp_gt",
+              "log_cmp_ge",
+              "log_text",
+              "log_logic"
+            ]
+          }
+        },
+        {
+          "event": "ping",
+          "payload": {
+            "value": 3,
+            "label": "x"
+          },
+          "expect": {
+            "handled": true,
+            "halted": false,
+            "error": false,
+            "errorNode": null,
+            "variables": {},
+            "calls": [],
+            "logs": [
+              "3",
+              "-2",
+              "0",
+              "3",
+              "true",
+              "false",
+              "false",
+              "true",
+              "false",
+              "true",
+              "false",
+              "false"
+            ],
+            "trace": [
+              "ping",
+              "log_mod",
+              "log_sub",
+              "log_min",
+              "log_max",
+              "log_cmp_eq",
+              "log_cmp_ne",
+              "log_cmp_lt",
+              "log_cmp_le",
+              "log_cmp_gt",
+              "log_cmp_ge",
+              "log_text",
+              "log_logic"
+            ]
+          }
+        },
+        {
+          "event": "ping",
+          "payload": {
+            "value": 25,
+            "label": "gems"
+          },
+          "expect": {
+            "handled": true,
+            "halted": false,
+            "error": false,
+            "errorNode": null,
+            "variables": {},
+            "calls": [],
+            "logs": [
+              "1",
+              "20",
+              "0",
+              "25",
+              "false",
+              "true",
+              "false",
+              "false",
+              "true",
+              "true",
+              "true",
+              "true"
+            ],
+            "trace": [
+              "ping",
+              "log_mod",
+              "log_sub",
+              "log_min",
+              "log_max",
+              "log_cmp_eq",
+              "log_cmp_ne",
+              "log_cmp_lt",
+              "log_cmp_le",
+              "log_cmp_gt",
+              "log_cmp_ge",
+              "log_text",
+              "log_logic"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "runtime-error",
+      "description": "Division by zero stops the handler and names the failing node.",
+      "program": {
+        "irVersion": 1,
+        "graphId": "errors",
+        "graphName": "Errors",
+        "domain": "testkit",
+        "sourceHash": "39f6c658",
+        "domainConfig": {},
+        "variables": {
+          "x": {
+            "type": "number",
+            "initial": 1
+          }
+        },
+        "handlers": {
+          "ping": {
+            "params": [
+              "value",
+              "label"
+            ],
+            "body": [
+              {
+                "s": "trace",
+                "node": "ping"
+              },
+              {
+                "s": "trace",
+                "node": "before"
+              },
+              {
+                "s": "call",
+                "fn": "test.emit",
+                "args": {
+                  "name": {
+                    "e": "const",
+                    "v": "before"
+                  }
+                },
+                "node": "before"
+              },
+              {
+                "s": "trace",
+                "node": "set"
+              },
+              {
+                "s": "set",
+                "var": "x",
+                "value": {
+                  "e": "op",
+                  "op": "div",
+                  "args": [
+                    {
+                      "e": "const",
+                      "v": 10
+                    },
+                    {
+                      "e": "param",
+                      "name": "value"
+                    }
+                  ]
+                },
+                "node": "set"
+              },
+              {
+                "s": "trace",
+                "node": "after"
+              },
+              {
+                "s": "call",
+                "fn": "test.emit",
+                "args": {
+                  "name": {
+                    "e": "const",
+                    "v": "after"
+                  }
+                },
+                "node": "after"
+              }
+            ]
+          }
+        }
+      },
+      "queries": {},
+      "results": {},
+      "steps": [
+        {
+          "event": "ping",
+          "payload": {
+            "value": 4,
+            "label": ""
+          },
+          "expect": {
+            "handled": true,
+            "halted": false,
+            "error": false,
+            "errorNode": null,
+            "variables": {
+              "x": 2.5
+            },
+            "calls": [
+              {
+                "fn": "test.emit",
+                "args": {
+                  "name": "before"
+                }
+              },
+              {
+                "fn": "test.emit",
+                "args": {
+                  "name": "after"
+                }
+              }
+            ],
+            "logs": [],
+            "trace": [
+              "ping",
+              "before",
+              "set",
+              "after"
+            ]
+          }
+        },
+        {
+          "event": "ping",
+          "payload": {
+            "value": 0,
+            "label": ""
+          },
+          "expect": {
+            "handled": true,
+            "halted": false,
+            "error": true,
+            "errorNode": "set",
+            "variables": {
+              "x": 2.5
+            },
+            "calls": [
+              {
+                "fn": "test.emit",
+                "args": {
+                  "name": "before"
+                }
+              }
+            ],
+            "logs": [],
+            "trace": [
+              "ping",
+              "before",
+              "set"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

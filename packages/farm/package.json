@@ -1,0 +1,14 @@
+{
+  "name": "@gamestudio/farm",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Farm simulation template: farm settings and map schema, rule domain, simulation host and the default farm",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@gamestudio/rules-core": "0.1.0",
+    "zod": "4.6.7"
+  }
+}

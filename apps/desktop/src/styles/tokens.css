@@ -1,0 +1,60 @@
+/* Design tokens. Dark navy surfaces, hairline borders, one teal accent with restrained secondary hues. */
+:root {
+  color-scheme: dark;
+  --bg-0: #070e1a;
+  --bg-1: #0b1524;
+  --bg-2: #0f1b2e;
+  --bg-3: #142339;
+  --bg-4: #1a2c47;
+  --bg-hover: #16263e;
+  --bg-active: #1c3150;
+  --line: #1b2a41;
+  --line-2: #24364f;
+  --line-3: #31476a;
+  --text-1: #e8eef7;
+  --text-2: #aab9cd;
+  --text-3: #7a8ca5;
+  --text-4: #556680;
+  --accent: #38c9b4;
+  --accent-2: #5fe0cc;
+  --accent-ink: #06231f;
+  --accent-soft: rgba(56, 201, 180, 0.13);
+  --accent-line: rgba(56, 201, 180, 0.42);
+  --violet: #a48cf5;
+  --violet-soft: rgba(164, 140, 245, 0.14);
+  --amber: #efb04a;
+  --amber-soft: rgba(239, 176, 74, 0.14);
+  --red: #f0716a;
+  --red-soft: rgba(240, 113, 106, 0.14);
+  --green: #59cd8c;
+  --green-soft: rgba(89, 205, 140, 0.14);
+  --blue: #6aa6ff;
+  --blue-soft: rgba(106, 166, 255, 0.14);
+  --pin-exec: #dfe7f2;
+  --pin-number: #6aa6ff;
+  --pin-boolean: #f07d9b;
+  --pin-text: #d8a3f5;
+  --pin-any: #8a9ab2;
+  --mode-accent: var(--accent);
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, monospace;
+  --text-xs: 11px;
+  --text-s: 12px;
+  --text-m: 13px;
+  --text-l: 15px;
+  --text-xl: 19px;
+  --text-xxl: 26px;
+  --radius-s: 4px;
+  --radius: 6px;
+  --radius-l: 10px;
+  --shadow-pop: 0 18px 48px rgba(0, 0, 0, 0.55), 0 0 0 1px var(--line-3);
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.02) inset;
+  --rail-w: 64px;
+  --topbar-h: 46px;
+  --statusbar-h: 26px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+[data-mode="creator"] { --mode-accent: var(--accent); }
+[data-mode="designer"] { --mode-accent: var(--violet); }
+[data-mode="developer"] { --mode-accent: var(--amber); }

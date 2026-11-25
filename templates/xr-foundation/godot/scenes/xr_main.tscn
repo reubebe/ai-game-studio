@@ -1,0 +1,57 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/xr_main.gd" id="1_xr"]
+[ext_resource type="Script" path="res://scripts/world_builder.gd" id="2_world"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_xr"]
+sky_top_color = Color(0.184, 0.388, 0.659, 1)
+sky_horizon_color = Color(0.722, 0.831, 0.925, 1)
+
+[sub_resource type="Sky" id="Sky_xr"]
+sky_material = SubResource("ProceduralSkyMaterial_xr")
+
+[sub_resource type="Environment" id="Environment_xr"]
+background_mode = 2
+sky = SubResource("Sky_xr")
+ambient_light_source = 3
+tonemap_mode = 2
+
+[sub_resource type="BoxMesh" id="BoxMesh_hand"]
+size = Vector3(0.06, 0.04, 0.14)
+
+[node name="XRMain" type="Node3D"]
+script = ExtResource("1_xr")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_xr")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 20, 0)
+shadow_enabled = true
+
+[node name="World" type="Node3D" parent="."]
+script = ExtResource("2_world")
+
+[node name="XROrigin3D" type="XROrigin3D" parent="."]
+
+[node name="XRCamera3D" type="XRCamera3D" parent="XROrigin3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
+
+[node name="FallbackLabel" type="Label3D" parent="XROrigin3D/XRCamera3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2)
+visible = false
+pixel_size = 0.004
+text = "No OpenXR runtime was found.
+Connect a headset with an OpenXR runtime, or run scenes/main.tscn for desktop play."
+
+[node name="LeftHand" type="XRController3D" parent="XROrigin3D"]
+tracker = &"left_hand"
+
+[node name="LeftMesh" type="MeshInstance3D" parent="XROrigin3D/LeftHand"]
+mesh = SubResource("BoxMesh_hand")
+
+[node name="RightHand" type="XRController3D" parent="XROrigin3D"]
+tracker = &"right_hand"
+
+[node name="RightMesh" type="MeshInstance3D" parent="XROrigin3D/RightHand"]
+mesh = SubResource("BoxMesh_hand")

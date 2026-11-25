@@ -1,0 +1,12 @@
+export * from "./ir";
+export * from "./graph";
+export * from "./registry";
+export * from "./validate";
+export * from "./compile";
+export * from "./interpret";
+export { applyOp, OP_ARITY, RuleRuntimeError } from "./ops";
+export { formatNumber, toText } from "./format";
+export { coreDomain, coreNodes, callStmt } from "./core-nodes";
+export { GraphBuilder } from "./builder";
+export { RecordingHost, type RecordedCall } from "./testing";
+export { runScenario, ScriptedHost, type ConformanceFile, type ConformanceScenario, type ConformanceStep, type QueryAnswer } from "./conformance";

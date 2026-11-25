@@ -1,0 +1,33 @@
+*, *::before, *::after { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body {
+  background: var(--bg-0);
+  color: var(--text-1);
+  font-family: var(--font-ui);
+  font-size: var(--text-m);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+input, textarea, select, button { font: inherit; color: inherit; }
+input, textarea, [contenteditable] { user-select: text; -webkit-user-select: text; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+/* WebKit (the desktop app's web view) sends no pointer events to disabled buttons, so the wrapper
+   that carries a disabled button's reason (data-tip) has to receive the hover instead. */
+[data-tip] > button:disabled { pointer-events: none; }
+[data-tip]:has(> button:disabled) { cursor: not-allowed; }
+a { color: var(--accent-2); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code, kbd, pre, .mono { font-family: var(--font-mono); font-size: 0.92em; }
+::selection { background: rgba(56, 201, 180, 0.32); }
+:focus-visible { outline: 2px solid var(--mode-accent); outline-offset: 1px; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--line-3); background-clip: padding-box; border: 2px solid transparent; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+h1, h2, h3, h4 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+p { margin: 0; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }

@@ -1,0 +1,14 @@
+{
+  "name": "@gamestudio/football",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Football template: match settings schema, rule domain, simulation host and the default match",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@gamestudio/rules-core": "0.1.0",
+    "zod": "4.6.7"
+  }
+}

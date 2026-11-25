@@ -1,0 +1,9 @@
+{
+  "name": "@gamestudio/plugins",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Plugin manifests and the built-in plugin registry (genre modules, engine targets, data kinds, agent skills)",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "zod": "4.6.7" }
+}

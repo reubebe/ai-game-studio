@@ -1,0 +1,23 @@
+ "status": "ready",
+ "attempts": [
+  []
+ ],
+ "changes": [
+  "Add rock 'rock_5' at (-24, 14)",
+  "Add rock 'rock_6' at (-28, 14)"
+ ]
+ ✓ packages/agents/src/agents.test.ts > live local model (Ollama) > World Builder turns a request into a valid, applicable proposal 4107ms
+ "status": "invalid",
+ "attempts": [
+  [
+   "rules/oware-abapa.rules.json: Capture Check: Capture when a pit holds must be a list of numbers"
+  ],
+  [
+   "rules/oware-abapa.rules.json: Capture Check: Capture when a pit holds must be a list of numbers"
+  ]
+ ],
+ "changes": [
+  "Capture Check (capture) › Capture when a pit holds: [2,3] → \"[2,3,4]\""
+ ]
+ × packages/agents/src/agents.test.ts > live local model (Ollama) > Rules Engineer changes an Oware setting through the graph 4497ms
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯

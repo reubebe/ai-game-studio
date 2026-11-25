@@ -1,0 +1,78 @@
+{
+  "about": "Walking, running, standing and jumping for humanoid characters that have no such animations (VRoid and other VRM characters). Each bone turns about the character's own axes (left, up, forward, measured from its skeleton), starting from the T-pose, by angle = base + amplitude * sin(2 * pi * (harmonic * t / length + phase)) degrees, never below min when one is given. Turns are listed in order and add to the parent bone's. hips moves the hips up and forward by fractions of the leg's length. Read by humanoid.gd in the game and by the studio's 3D view (look.ts); keep both in step with this file.",
+  "clips": {
+    "Idle": {
+      "length": 3.2,
+      "loop": true,
+      "hips": { "up": [-0.006, 0.005, 0.0, 1] },
+      "bones": {
+        "Spine": [["left", 2, 1.2, 0.0, 1]],
+        "Chest": [["left", 1, 1.0, 0.25, 1]],
+        "Head": [["left", -2, 1.5, 0.5, 1], ["up", 0, 2.0, 0.1, 1]],
+        "LeftUpperArm": [["forward", -72, 2, 0.0, 1], ["left", -6, 2, 0.1, 1]],
+        "RightUpperArm": [["forward", 72, -2, 0.0, 1], ["left", -6, 2, 0.1, 1]],
+        "LeftLowerArm": [["left", -12, 2, 0.2, 1]],
+        "RightLowerArm": [["left", -12, 2, 0.2, 1]],
+        "LeftLowerLeg": [["left", 3, 0, 0.0, 1]],
+        "RightLowerLeg": [["left", 3, 0, 0.0, 1]]
+      }
+    },
+    "Walk": {
+      "length": 1.0,
+      "loop": true,
+      "hips": { "up": [-0.018, 0.02, 0.25, 2] },
+      "bones": {
+        "Hips": [["up", 0, 5, 0.0, 1]],
+        "Spine": [["left", 3, 1, 0.25, 2], ["up", 0, -4, 0.0, 1]],
+        "Head": [["up", 0, -2, 0.0, 1]],
+        "LeftUpperLeg": [["left", -2, 24, 0.0, 1]],
+        "LeftLowerLeg": [["left", 22, 24, 0.75, 1, 2]],
+        "LeftFoot": [["left", 0, 10, 0.6, 1]],
+        "RightUpperLeg": [["left", -2, 24, 0.5, 1]],
+        "RightLowerLeg": [["left", 22, 24, 0.25, 1, 2]],
+        "RightFoot": [["left", 0, 10, 0.1, 1]],
+        "LeftUpperArm": [["forward", -74, 0, 0.0, 1], ["left", -4, 18, 0.5, 1]],
+        "RightUpperArm": [["forward", 74, 0, 0.0, 1], ["left", -4, 18, 0.0, 1]],
+        "LeftLowerArm": [["left", -18, 8, 0.4, 1]],
+        "RightLowerArm": [["left", -18, 8, 0.9, 1]]
+      }
+    },
+    "Run": {
+      "length": 0.66,
+      "loop": true,
+      "hips": { "up": [-0.03, 0.04, 0.25, 2] },
+      "bones": {
+        "Hips": [["up", 0, 8, 0.0, 1]],
+        "Spine": [["left", 10, 2, 0.25, 2], ["up", 0, -7, 0.0, 1]],
+        "Head": [["left", -6, 0, 0.0, 1], ["up", 0, -4, 0.0, 1]],
+        "LeftUpperLeg": [["left", -8, 40, 0.0, 1]],
+        "LeftLowerLeg": [["left", 45, 45, 0.75, 1, 8]],
+        "LeftFoot": [["left", 0, 18, 0.6, 1]],
+        "RightUpperLeg": [["left", -8, 40, 0.5, 1]],
+        "RightLowerLeg": [["left", 45, 45, 0.25, 1, 8]],
+        "RightFoot": [["left", 0, 18, 0.1, 1]],
+        "LeftUpperArm": [["forward", -66, 0, 0.0, 1], ["left", -6, 35, 0.5, 1]],
+        "RightUpperArm": [["forward", 66, 0, 0.0, 1], ["left", -6, 35, 0.0, 1]],
+        "LeftLowerArm": [["left", -75, 10, 0.5, 1]],
+        "RightLowerArm": [["left", -75, 10, 0.0, 1]]
+      }
+    },
+    "Jump": {
+      "length": 0.6,
+      "loop": false,
+      "hips": { "up": [0.0, 0.0, 0.0, 1] },
+      "bones": {
+        "Spine": [["left", 6, 0, 0.0, 1]],
+        "Head": [["left", -4, 0, 0.0, 1]],
+        "LeftUpperLeg": [["left", -38, 0, 0.0, 1]],
+        "LeftLowerLeg": [["left", 62, 0, 0.0, 1]],
+        "RightUpperLeg": [["left", -12, 0, 0.0, 1]],
+        "RightLowerLeg": [["left", 30, 0, 0.0, 1]],
+        "LeftUpperArm": [["forward", -42, 0, 0.0, 1], ["left", -22, 0, 0.0, 1]],
+        "RightUpperArm": [["forward", 42, 0, 0.0, 1], ["left", -22, 0, 0.0, 1]],
+        "LeftLowerArm": [["left", -35, 0, 0.0, 1]],
+        "RightLowerArm": [["left", -35, 0, 0.0, 1]]
+      }
+    }
+  }
+}

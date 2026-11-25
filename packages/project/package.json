@@ -1,0 +1,22 @@
+{
+  "name": "@gamestudio/project",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Project manifest, safe paths, project templates and engine data sync",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@gamestudio/explore": "0.1.0",
+    "@gamestudio/farm": "0.1.0",
+    "@gamestudio/football": "0.1.0",
+    "@gamestudio/learn": "0.1.0",
+    "@gamestudio/ludo": "0.1.0",
+    "@gamestudio/oware": "0.1.0",
+    "@gamestudio/platformer": "0.1.0",
+    "@gamestudio/rpg": "0.1.0",
+    "@gamestudio/rules-core": "0.1.0",
+    "zod": "4.6.7"
+  }
+}

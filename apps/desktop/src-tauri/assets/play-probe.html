@@ -1,0 +1,24 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Isolation probe</title>
+<script>
+// Self-test only (served in --smoke-test mode): what a page in the Play here frame can reach.
+(async () => {
+  const report = { origin: self.origin, tauriInternals: typeof window.__TAURI_INTERNALS__, tauri: typeof window.__TAURI__ };
+  try {
+    report.parentDocument = "readable: " + parent.document.title;
+  } catch (e) {
+    report.parentDocument = e.name;
+  }
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), 3000);
+  try {
+    const r = await fetch("ipc://localhost/app_info", { method: "POST", headers: { "Content-Type": "application/json", "Tauri-Callback": "1", "Tauri-Error": "2" }, body: "{}", signal: abort.signal });
+    report.ipc = "answered " + r.status + ": " + (await r.text()).slice(0, 120);
+  } catch (e) {
+    report.ipc = e.name === "AbortError" ? "no answer" : "blocked (" + e.name + ")";
+  }
+  clearTimeout(timer);
+  parent.postMessage({ source: "gamestudio-probe", ...report }, "*");
+})();
+</script>

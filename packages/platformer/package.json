@@ -1,0 +1,14 @@
+{
+  "name": "@gamestudio/platformer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "2D platformer template: level schema, rule domain, simulation host and the default level",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@gamestudio/rules-core": "0.1.0",
+    "zod": "4.6.7"
+  }
+}

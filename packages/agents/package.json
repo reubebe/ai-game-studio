@@ -1,0 +1,21 @@
+{
+  "name": "@gamestudio/agents",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Permission-scoped project agents: typed operations, proposals, validation, diffs and the run loop",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@gamestudio/explore": "0.1.0",
+    "@gamestudio/farm": "0.1.0",
+    "@gamestudio/football": "0.1.0",
+    "@gamestudio/learn": "0.1.0",
+    "@gamestudio/platformer": "0.1.0",
+    "@gamestudio/project": "0.1.0",
+    "@gamestudio/rpg": "0.1.0",
+    "@gamestudio/rules-core": "0.1.0",
+    "zod": "4.6.7"
+  }
+}

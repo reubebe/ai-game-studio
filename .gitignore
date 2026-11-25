@@ -1,0 +1,42 @@
+# Dependencies and build output
+node_modules/
+dist/
+build/
+coverage/
+apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/gen/schemas/
+*.tsbuildinfo
+
+# Test and verification artifacts (evidence worth keeping is copied into docs/evidence)
+test-results/
+playwright-report/
+.verification/
+
+# Local engine downloads and caches are never committed
+.engines/
+*.zip
+*.tpz
+
+# OS and editor noise
+.DS_Store
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Godot import caches inside templates
+templates/**/.godot/
+
+# Kept on the author's computer only: working notes and test evidence that name the author or describe their computer
+/CLAUDE.md
+/PROGRESS.md
+/docs/evidence/desktop-smoke-*.json
+/docs/evidence/play-here-*-20[0-9][0-9]-*.jpg
+/docs/evidence/play-here-20[0-9][0-9]-*.jpg
+/docs/evidence/world-3d-*.jpg
+!/docs/evidence/play-here-colours-*.jpg

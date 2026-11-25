@@ -1,0 +1,8 @@
+# Wine from Debian's own signed packages, for running exported Windows games' self-tests in
+# packages/project/src/godot.integration.test.ts (only when CONTAINER_BIN is set). The test builds it once
+# for linux/amd64 and runs each game with no network and its build folder mounted read-only.
+FROM docker.io/library/debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends wine wine64 \
+ && rm -rf /var/lib/apt/lists/*
+ENV WINEDEBUG=-all WINEPREFIX=/tmp/wineprefix

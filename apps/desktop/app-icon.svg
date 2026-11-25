@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#14243d"/>
+      <stop offset="1" stop-color="#08101d"/>
+    </linearGradient>
+    <linearGradient id="gem" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5fe0cc"/>
+      <stop offset="1" stop-color="#2aa995"/>
+    </linearGradient>
+  </defs>
+  <rect x="64" y="64" width="896" height="896" rx="200" fill="url(#bg)"/>
+  <rect x="64.5" y="64.5" width="895" height="895" rx="199.5" fill="none" stroke="#2a3d5c" stroke-width="3"/>
+  <g fill="#1d2e4d">
+    <circle cx="300" cy="352" r="34"/><circle cx="380" cy="352" r="34"/><circle cx="460" cy="352" r="34"/>
+    <circle cx="564" cy="352" r="34"/><circle cx="644" cy="352" r="34"/><circle cx="724" cy="352" r="34"/>
+    <circle cx="300" cy="672" r="34"/><circle cx="380" cy="672" r="34"/><circle cx="460" cy="672" r="34"/>
+    <circle cx="564" cy="672" r="34"/><circle cx="644" cy="672" r="34"/><circle cx="724" cy="672" r="34"/>
+  </g>
+  <path d="M512 270 L668 512 L512 754 L356 512 Z" fill="url(#gem)"/>
+  <path d="M512 270 L578 512 L512 754 Z" fill="#a8f2e6" opacity="0.55"/>
+  <path d="M356 512 H668" stroke="#08101d" stroke-width="14" opacity="0.55"/>
+</svg>

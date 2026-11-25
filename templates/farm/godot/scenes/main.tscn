@@ -1,0 +1,22 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="Script" path="res://scripts/farm_map.gd" id="2_map"]
+[ext_resource type="Script" path="res://scripts/farmer.gd" id="3_farmer"]
+[ext_resource type="Script" path="res://scripts/hud.gd" id="4_hud"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_main")
+
+[node name="Daylight" type="CanvasModulate" parent="."]
+
+[node name="Farm" type="Node2D" parent="."]
+script = ExtResource("2_map")
+
+[node name="Farmer" type="Node2D" parent="."]
+script = ExtResource("3_farmer")
+
+[node name="Camera" type="Camera2D" parent="."]
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("4_hud")

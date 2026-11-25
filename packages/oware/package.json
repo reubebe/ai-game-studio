@@ -1,0 +1,13 @@
+{
+  "name": "@gamestudio/oware",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Oware (Abapa) reference engine, rule-graph domain, deterministic host and computer opponent",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@gamestudio/rules-core": "0.1.0"
+  }
+}

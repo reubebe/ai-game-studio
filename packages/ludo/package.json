@@ -1,0 +1,13 @@
+{
+  "name": "@gamestudio/ludo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Ludo reference engine with seeded dice, rule-graph domain, deterministic host and computer players",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@gamestudio/rules-core": "0.1.0"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "@gamestudio/rpg",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Creature-collection RPG foundation: original creature catalog schema and a deterministic encounter engine",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "zod": "4.6.7" }
+}
