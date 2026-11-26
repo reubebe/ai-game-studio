@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BUILTIN_PLUGINS, checkModules, pluginById } from "@gamestudio/plugins";
 import { parseCatalog, type Catalog, type Creature } from "@gamestudio/rpg";
 import { parseLesson, type Lesson, type Question } from "@gamestudio/learn";
 import type { ProjectManifest } from "@gamestudio/project";
-import { backend } from "../../lib/backend";
+import { backend, errorMessage } from "../../lib/backend";
 import { useApp } from "../../state/app";
 import { useProject, type Doc } from "../../state/project";
 import { useRuns } from "../../state/runs";
@@ -23,6 +23,50 @@ export function TextDocEditor({ doc }: { doc: Doc }) {
       <div className="row xsmall muted" style={{ padding: "4px 12px", borderBottom: "1px solid var(--line)" }}>{languageLabel(doc.path)}</div>
       <div style={{ flex: 1, minHeight: 0 }}>
         <CodeEditor path={doc.path} value={String(doc.data ?? "")} version={doc.version} onChange={(t) => updateDoc(doc.path, t)} />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * A structured document (world, level, match, farm, project settings) as its JSON text. Each edit that parses
+ * updates the document, so the visual editors see it at once; text that does not parse stays here with the
+ * reason and is not applied.
+ */
+export function JsonDocEditor({ doc }: { doc: Doc }) {
+  const updateDoc = useProject((s) => s.updateDoc);
+  const format = (d: unknown) => `${JSON.stringify(d, null, 2)}\n`;
+  const [text, setText] = useState(() => format(doc.data));
+  const [shown, setShown] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const mine = useRef(doc.version);
+  useEffect(() => {
+    // A change from elsewhere (the visual editor, the assistant, a reload): show it.
+    if (doc.version === mine.current) return;
+    mine.current = doc.version;
+    setText(format(doc.data));
+    setError(null);
+    setShown((v) => v + 1);
+  }, [doc.version, doc.data]);
+  const change = (t: string) => {
+    setText(t);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(t);
+    } catch (e) {
+      setError(`Not valid JSON yet (${errorMessage(e)}); the last valid version is kept.`);
+      return;
+    }
+    setError(null);
+    mine.current = doc.version + 1;
+    updateDoc(doc.path, parsed);
+  };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      <div className="row xsmall muted" style={{ padding: "4px 12px", borderBottom: "1px solid var(--line)" }}>JSON · edits apply as soon as the text is valid</div>
+      {error && <div style={{ padding: "6px 10px" }}><Notice kind="warn">{error}</Notice></div>}
+      <div style={{ flex: 1, minHeight: 0 }}>
+        <CodeEditor path={doc.path} value={text} version={shown} onChange={change} />
       </div>
     </div>
   );
@@ -108,7 +152,8 @@ export function ManifestEditor({ doc }: { doc: Doc }) {
   const [raw, setRaw] = useState(false);
   const m = doc.data as ProjectManifest;
   const problems = useMemo(() => checkModules(m.modules ?? []), [m.modules]);
-  if (raw || doc.error) return <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>{!doc.error && <div style={{ padding: 6 }}><Button size="small" onClick={() => setRaw(false)}>Back to form</Button></div>}<div style={{ flex: 1 }}><TextDocEditor doc={doc} /></div></div>;
+  if (doc.error) return <TextDocEditor doc={doc} />;
+  if (raw) return <div style={{ height: "100%", display: "flex", flexDirection: "column" }}><div style={{ padding: 6 }}><Button size="small" onClick={() => setRaw(false)}>Back to form</Button></div><div style={{ flex: 1 }}><JsonDocEditor doc={doc} /></div></div>;
   return (
     <div className="view__body view__body--padded">
       <div className="page stack" style={{ maxWidth: 780, gap: 18 }}>

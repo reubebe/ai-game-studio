@@ -56,9 +56,18 @@ The bar on the left switches between the main views:
 - **Assistant**: chat with the AI about your project.
 - **Engines**, **Plugins** and **Settings** sit at the bottom.
 
-At the top right, **Creator**, **Designer** and **Developer** change how much you see. Creator shows forms, the world
-map and rules in plain words. Designer adds the rule graph, scenes and the simulator. Developer adds files, code, raw
-JSON and the compiled output. All three edit the same project, so you can switch at any time.
+At the top right, **Creator**, **Designer** and **Developer** change how much the **Workspace** shows; the other views
+look the same in every mode. A note says what changed each time you switch.
+
+| | Creator | Designer | Developer |
+|---|---|---|---|
+| Rules | Plain sentences and settings | The node graph, with the Simulate tab | The graph plus a **Compiled** tab |
+| Left panel | Outline only | Adds Godot scenes and a **Files** tab | Opens on Files and adds scripts |
+| Levels, farm, match, project settings | Visual editors | Visual editors | An **Editor / JSON** switch above each, and **Edit gamestudio.json** |
+| Assistant | | | Shows each applied change's before and after |
+
+In the JSON view, an edit applies as soon as the text is valid JSON; until then a note says what is wrong and the last
+valid version is kept. All three modes edit the same project, so you can switch at any time.
 
 **Save** (⌘S) writes your changes. **Snapshot** keeps a restorable copy (see [section 10](#10-snapshots-and-undo)).
 

@@ -50,7 +50,15 @@ function Rail() {
 
 function TopBar({ action }: { action?: ReactNode }) {
   const mode = useApp((s) => s.mode);
-  const setMode = useApp((s) => s.setMode);
+  const route = useApp((s) => s.route);
+  const setModeRaw = useApp((s) => s.setMode);
+  const toast = useApp((s) => s.toast);
+  // Say what the switch changed: most screens look the same in every mode, so a silent switch read as broken.
+  const setMode = (m: "creator" | "designer" | "developer") => {
+    setModeRaw(m);
+    const where = route === "workspace" ? "" : " Open a project's Workspace to see it.";
+    toast("info", `${MODE_NOTES[m].name} mode`, `${MODE_NOTES[m].detail}${where}`);
+  };
   const openDialog = useApp((s) => s.openDialog);
   const manifest = useProject((s) => s.manifest);
   const docs = useProject((s) => s.docs);
@@ -195,3 +203,9 @@ export function Shell({ children, action }: { children: ReactNode; action?: Reac
     </div>
   );
 }
+
+const MODE_NOTES = {
+  creator: { name: "Creator", detail: "Rules read as plain sentences and settings; files, scenes and code are hidden." },
+  designer: { name: "Designer", detail: "Rules show as a node graph with the simulator, and the Workspace adds Godot scenes and a Files tab." },
+  developer: { name: "Developer", detail: "Adds scripts, an Editor / JSON switch on levels and settings, Edit as text, and the rules' compiled output." },
+} as const;

@@ -15,14 +15,14 @@ import { useApp } from "../../state/app";
 import { useProject, type Doc } from "../../state/project";
 import { useFocus } from "../../state/focus";
 import { useRuns } from "../../state/runs";
-import { Empty, IconButton, formatWhen } from "../../components/ui";
+import { Empty, IconButton, Segmented, formatWhen } from "../../components/ui";
 import { BookIcon, BoxIcon, ChevronDownIcon, ChevronRightIcon, CloseIcon, CodeFileIcon, ErrorIcon, FileIcon, FolderIcon, GraphIcon, InfoIcon, JsonFileIcon, LessonIcon, MapIcon, OkIcon, SettingsIcon, SlidersIcon, SwordsIcon, TextFileIcon, TrashIcon, TrophyIcon, SproutIcon, WarnIcon, AssetsIcon } from "../../components/icons";
 import { RuleEditor } from "../rules/RuleEditor";
 import { WorldEditor } from "../world/WorldEditor";
 import { LevelEditor } from "../level/LevelEditor";
 import { MatchEditor } from "../match/MatchEditor";
 import { FarmEditor } from "../farm/FarmEditor";
-import { BinaryInfo, CppSettingsEditor, CreatureEditor, ImageViewer, LessonEditor, ManifestEditor, MarkdownView, SceneViewer, TextDocEditor } from "../editors/DocEditors";
+import { BinaryInfo, CppSettingsEditor, CreatureEditor, ImageViewer, JsonDocEditor, LessonEditor, ManifestEditor, MarkdownView, SceneViewer, TextDocEditor } from "../editors/DocEditors";
 
 export interface Problem {
   path: string;
@@ -160,8 +160,28 @@ function FileTree() {
   return <div className="panel__body" style={{ paddingTop: 4 }}>{tree.map((n) => row(n, 0))}</div>;
 }
 
+/** Documents with a visual editor that Developer mode can also show as JSON. */
+const JSON_VIEWABLE = new Set<Doc["kind"]>(["world", "level", "match", "farm", "creatures", "lesson"]);
+
 function EditorFor({ doc }: { doc: Doc }) {
+  const mode = useApp((s) => s.mode);
+  const [asJson, setAsJson] = useState(false);
   if (doc.error) return <TextDocEditor doc={doc} />;
+  if (mode === "developer" && JSON_VIEWABLE.has(doc.kind)) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+        <div className="row" style={{ padding: "4px 10px", borderBottom: "1px solid var(--line)", gap: 8 }}>
+          <span className="xsmall muted">Developer view</span>
+          <Segmented ariaLabel="Show the document as" value={asJson ? "json" : "editor"} onChange={(v) => setAsJson(v === "json")} options={[{ value: "editor", label: "Editor" }, { value: "json", label: "JSON" }]} />
+        </div>
+        <div style={{ flex: 1, minHeight: 0 }}>{asJson ? <JsonDocEditor doc={doc} /> : <VisualEditor doc={doc} />}</div>
+      </div>
+    );
+  }
+  return <VisualEditor doc={doc} />;
+}
+
+function VisualEditor({ doc }: { doc: Doc }) {
   switch (doc.kind) {
     case "rules": return <RuleEditor path={doc.path} />;
     case "world": return <WorldEditor path={doc.path} />;

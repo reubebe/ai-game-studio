@@ -782,6 +782,27 @@ test("project screens explain themselves with no project open, and opening one l
   await expect(page.getByRole("textbox", { name: "Message for the assistant" })).toBeVisible();
 });
 
+test("work modes: switching says what changed, and Developer shows levels and settings as JSON", async ({ page }) => {
+  await createProject(page, "exploration-3d");
+  await expect(page.getByRole("application", { name: "Top-down map of the level" })).toBeVisible();
+  await setMode(page, "Creator");
+  await expect(page.getByText("Creator mode", { exact: true })).toBeVisible();
+  await expect(page.getByRole("group", { name: "Show the document as" })).toHaveCount(0);
+  await setMode(page, "Developer");
+  await expect(page.getByText("Developer mode", { exact: true })).toBeVisible();
+  const view = page.getByRole("group", { name: "Show the document as" });
+  await view.getByRole("button", { name: "JSON" }).click();
+  await expect(page.locator(".cm-content")).toContainText('"objects"');
+  await expect(page.locator(".cm-content")).not.toContainText("[object Object]");
+  await view.getByRole("button", { name: "Editor" }).click();
+  await expect(page.getByRole("application", { name: "Top-down map of the level" })).toBeVisible();
+  // Project settings as text show the file, not "[object Object]".
+  await page.getByRole("tab", { name: "Outline" }).click();
+  await page.getByText("Project settings").first().click();
+  await page.getByRole("button", { name: "Edit gamestudio.json" }).click();
+  await expect(page.locator(".cm-content")).toContainText('"template"');
+});
+
 test("every main view renders for an open project", async ({ page }) => {
   await createProject(page, "exploration-3d");
   for (const [label, heading] of [["Play and run", "Play in Godot"], ["Asset library", "Asset library"], ["Engines", "Engines"], ["Plugins and modules", "Plugins and modules"], ["Settings", "Work mode"]] as const) {
