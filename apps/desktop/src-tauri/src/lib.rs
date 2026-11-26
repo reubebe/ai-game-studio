@@ -15,7 +15,8 @@ pub mod projects;
 pub mod runner;
 pub mod snapshots;
 pub mod timeutil;
-pub mod unreal_nature;
+pub mod shell_keys;
+mod unreal_nature;
 pub mod unreal_sample;
 
 use db::{AuditEntry, Db, RecentProject};
@@ -1089,6 +1090,8 @@ pub fn run() {
     if args.get(1).map(|a| a == unreal_nature::CLI_FLAG).unwrap_or(false) {
         std::process::exit(unreal_nature::run_cli(&args[2..]));
     }
+    // Opened from Finder or the Dock: take AI keys the user exports in their shell profile.
+    shell_keys::load_from_login_shell();
     let smoke_dir = smoke_dir_from_args();
     let smoke_extras = if smoke_dir.is_some() { smoke_extras_from_args() } else { Vec::new() };
     // The self-test needs its window visible. Its input goes to the web view, not through the HID system, so

@@ -303,8 +303,10 @@ is set up yet, so art comes from imports and the free library.
 
 The assistant is optional: every project plays, saves and runs without it.
 
-In **Settings**, choose a provider: a local Ollama model, or Gemini or OpenAI with a key read from your environment
-(keys are never stored in projects or passed to games). Cloud providers stay off until you tick the box agreeing that
+In **Settings**, choose a provider: a local Ollama model, or Gemini, OpenAI or Anthropic with a key read from your
+environment. Export the key in your shell profile (for example `export GEMINI_API_KEY=...` in `~/.zshrc` or
+`~/.bash_profile`); Game Studio reads it from there even when you open it from the Dock or Finder. Keys are never stored
+in projects or passed to games. Cloud providers stay off until you tick the box agreeing that
 they receive the project context you send and bill your account.
 
 In the **Assistant** view, pick a specialist (World Builder, Rules Engineer, Rule & Cultural Reviewer) or leave it on

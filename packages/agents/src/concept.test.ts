@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createStudioRegistry } from "@gamestudio/project";
-import { agentById, allowedOperations, applyProposal, docsFromFiles, ideaBriefJsonSchema, ideaSystemPrompt, ideaUserPrompt, planGame, routeRequest, type GenerateFn } from "./index";
+import { agentById, allowedOperations, applyProposal, docsFromFiles, briefProblems, ideaBriefJsonSchema, ideaSystemPrompt, ideaUserPrompt, planGame, routeRequest, type GenerateFn, type IdeaBrief } from "./index";
 import { generateProject } from "@gamestudio/project";
 
 const registry = createStudioRegistry();
@@ -237,6 +237,23 @@ describe("start from an idea", () => {
     expect(user.length).toBeLessThan(9000);
     expect(ideaSystemPrompt()).toMatch(/never copy its name, characters, story text, art, music or level layouts/);
     expect(JSON.stringify(ideaBriefJsonSchema)).not.toMatch(/maxLength|minLength/);
+  });
+
+  it("asks again when the reply is a field name, not a message, and writes one itself the second time", async () => {
+    const replies: string[] = [];
+    let retries = 0;
+    const generate: GenerateFn = async (req) => {
+      if (req.schemaName !== "game_idea_brief") return { text: JSON.stringify({ summary: "No change.", operations: [] }), provider: "t", model: "m" };
+      replies.push(req.messages.at(-1)!.content);
+      return { text: JSON.stringify({ ...brief, reply: "notPossible" }), provider: "t", model: "m" };
+    };
+    const plan = await planGame({ input: { idea: "hide and seek" }, generate, registry, onRetry: () => retries++ });
+    expect(replies).toHaveLength(2);
+    expect(replies[1]).toMatch(/reply: "notPossible" is not a message to the user/);
+    expect(retries).toBe(1);
+    expect(plan.brief?.reply).toMatch(/^I'll make "Moonlit Ridge" from the platformer-2d template\./);
+    expect(briefProblems({ ...brief, reply: "A moonlit cliff run fits." } as IdeaBrief)).toEqual([]);
+    expect(ideaSystemPrompt()).toMatch(/hide and seek/);
   });
 
   it("repairs one bad brief and gives up honestly after a second", async () => {

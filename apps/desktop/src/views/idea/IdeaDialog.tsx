@@ -96,7 +96,7 @@ export function IdeaDialog() {
         stopRef.current = null;
       }
     };
-    const result = await planGame({ input: { idea, page: pageText }, generate, registry, onStage: (s) => setStage(s), onText: (p) => setStreamed((t) => t + p) });
+    const result = await planGame({ input: { idea, page: pageText }, generate, registry, onStage: (s) => setStage(s), onText: (p) => setStreamed((t) => t + p), onRetry: () => setStreamed("") });
     if (cancelled.current) return setStage("idle");
     setPlan(result);
     setStage(result.status === "failed" && !result.brief ? "idle" : "done");
