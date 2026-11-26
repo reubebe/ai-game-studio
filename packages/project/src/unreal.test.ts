@@ -129,7 +129,20 @@ describe("Unreal exploration template with realistic people", () => {
     const uproject = JSON.parse(file(realistic(), "unreal/StudioValley.uproject")!);
     expect(uproject.Modules).toEqual([{ Name: "StudioValley", Type: "Runtime", LoadingPhase: "Default" }]);
     // Editor-only tools stay editor-only; odd names and limits are left out.
-    expect(uproject.Plugins).toEqual([{ Name: "PoseSearch", Enabled: true }, { Name: "ModelingToolsEditorMode", Enabled: true, TargetAllowList: ["Editor"] }, { Name: "Odd", Enabled: true }]);
+    // Plus the editor's Python and Geometry Script, which import Game Studio's trees and people, also editor-only.
+    expect(uproject.Plugins).toEqual([
+      { Name: "PoseSearch", Enabled: true },
+      { Name: "ModelingToolsEditorMode", Enabled: true, TargetAllowList: ["Editor"] },
+      { Name: "Odd", Enabled: true },
+      { Name: "PythonScriptPlugin", Enabled: true, TargetAllowList: ["Editor"] },
+      { Name: "EditorScriptingUtilities", Enabled: true, TargetAllowList: ["Editor"] },
+      { Name: "GeometryScripting", Enabled: true, TargetAllowList: ["Editor"] },
+    ]);
+  });
+
+  it("cooks Game Studio's trees and people, which the game names in code only", () => {
+    expect(file(realistic(), "unreal/Config/DefaultGame.ini")).toContain('+DirectoriesToAlwaysCook=(Path="/Game/GameStudioNature")');
+    expect(file(make(), "unreal/Config/DefaultGame.ini")).not.toContain("GameStudioNature");
   });
 
   it("keeps the sample's 7 GB of content out of snapshots, but not Game Studio's own data", () => {

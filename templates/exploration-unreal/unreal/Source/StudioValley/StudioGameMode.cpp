@@ -2,9 +2,16 @@
 #include "Components/ChildActorComponent.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/ExponentialHeightFogComponent.h"
+#include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
+#include "Animation/AnimSequence.h"
+#include "RHI.h"
+#include "Scalability.h"
+#include "RenderCore.h"
+#include "AnimationRuntime.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
 #include "Components/SkyLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/VolumetricCloudComponent.h"
@@ -14,6 +21,7 @@
 #include "Camera/PlayerCameraManager.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "Engine/TextureRenderTarget2D.h"
+#include "Engine/PostProcessVolume.h"
 #include "Engine/SkyLight.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
@@ -73,6 +81,7 @@ void AStudioGameMode::InitGame(const FString& MapName, const FString& Options, F
 	bSmoke = FParse::Param(FCommandLine::Get(), TEXT("studio-smoke"));
 	bTelemetry = FParse::Param(FCommandLine::Get(), TEXT("studio-telemetry"));
 	FParse::Value(FCommandLine::Get(), TEXT("studio-screenshot="), ScreenshotPath);
+	FParse::Value(FCommandLine::Get(), TEXT("studio-screenshot-near="), ScreenshotNear);
 	ErrorLog = MakeUnique<FStudioErrorLog>();
 	GLog->AddOutputDevice(ErrorLog.Get());
 	// Another character and controller, when the project names them (players spawn after InitGame).
@@ -205,7 +214,15 @@ void AStudioGameMode::BuildLevel()
 	const double D = World.Depth;
 	AActor* Ground = NewActor(FVector::ZeroVector, FRotator::ZeroRotator, 1.0);
 	const FLinearColor GroundColor = FStudioWorld::ParseColor(World.Ground, FLinearColor::FromSRGBColor(FColor(90, 125, 60)));
-	Part(Ground, Cube, FVector(0, 0, -0.5), FVector(D, W, 1.0), GroundColor.ToFColor(true), true);
+	UStaticMeshComponent* Floor = Part(Ground, Cube, FVector(0, 0, -0.5), FVector(D, W, 1.0), GroundColor.ToFColor(true), true);
+	if (bRealisticLight)
+	{
+		if (UMaterialInterface* Photo = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/GameStudioNature/M/M_Ground.M_Ground"), nullptr, LOAD_NoWarn | LOAD_Quiet))
+		{
+			Floor->SetMaterial(0, Photo);
+		}
+		PlantGround(Ground);
+	}
 	// Invisible walls along the map edge, as in the Godot version.
 	const FVector Walls[4][2] = {
 		{FVector(D / 2 + 0.5, 0, 3), FVector(1, W + 2, 8)},
@@ -227,13 +244,18 @@ void AStudioGameMode::BuildLevel()
 	{
 		Light->SetMobility(EComponentMobility::Movable);
 		Light->SetAtmosphereSunLight(true);
-		Light->SetIntensity(8.f);
+		Light->SetIntensity(bRealisticLight ? 6.f : 8.f);
 		// The level's sunlight colour (white when it has none).
 		Light->SetLightColor(FStudioWorld::ParseColor(World.SunColor, FLinearColor::White));
 	}
 	if (bRealisticLight)
 	{
 		AddRealisticSky(Params);
+		// Unreal's High preset: on an Apple M-series Mac the Epic default took about 51 ms of GPU time a frame
+		// in this valley, High about 27 ms, with little visible difference.
+		Scalability::FQualityLevels Quality = Scalability::GetQualityLevels();
+		Quality.SetFromSingleQualityLevel(2);
+		Scalability::SetQualityLevels(Quality);
 	}
 	else
 	{
@@ -251,8 +273,17 @@ void AStudioGameMode::BuildLevel()
 	if (USkyLightComponent* Sky = SkyLight->GetLightComponent())
 	{
 		Sky->SetMobility(EComponentMobility::Movable);
-		Sky->bRealTimeCapture = true;
-		Sky->RecaptureSky();
+		if (bRealisticLight)
+		{
+			// Set through the setter: on a light that is already registered, the bare flag changes nothing.
+			Sky->SetRealTimeCaptureEnabled(true);
+			Sky->SetIntensity(1.1f);
+		}
+		else
+		{
+			Sky->bRealTimeCapture = true;
+			Sky->RecaptureSky();
+		}
 	}
 
 	for (const FStudioObject& O : World.Objects)
@@ -279,6 +310,170 @@ void AStudioGameMode::BuildLevel()
 		}
 	}
 	UE_LOG(LogStudio, Display, TEXT("Built %d of %d objects for %s"), Nodes.Num(), World.Objects.Num(), *World.Name);
+}
+
+UStaticMesh* AStudioGameMode::NatureMesh(const TCHAR* Name) const
+{
+	return bRealisticLight ? LoadObject<UStaticMesh>(nullptr, *FString::Printf(TEXT("/Game/GameStudioNature/%s.%s"), Name, Name), nullptr, LOAD_NoWarn | LOAD_Quiet) : nullptr;
+}
+
+void AStudioGameMode::Dress(AActor* Owner, const FString& Id, const TCHAR* Name, double Scale)
+{
+	UStaticMesh* Mesh = NatureMesh(Name);
+	if (!Mesh)
+	{
+		return;
+	}
+	TInlineComponentArray<UStaticMeshComponent*> Shapes(Owner);
+	for (UStaticMeshComponent* Shape : Shapes)
+	{
+		Shape->SetVisibility(false);
+	}
+	UStaticMeshComponent* C = NewObject<UStaticMeshComponent>(Owner);
+	C->SetMobility(EComponentMobility::Movable);
+	C->SetStaticMesh(Mesh);
+	C->SetupAttachment(Owner->GetRootComponent());
+	// Each object keeps a turn and a size of its own, worked out from its id.
+	const uint32 Hash = FCrc::StrCrc32(*Id);
+	C->SetRelativeRotation(FRotator(0.0, Hash % 360, 0.0));
+	C->SetRelativeScale3D(FVector(Scale * (0.88 + 0.24 * ((Hash >> 9) % 100) / 100.0)));
+	C->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
+	C->RegisterComponent();
+	Owner->AddInstanceComponent(C);
+}
+
+void AStudioGameMode::Surface(UStaticMeshComponent* Shape, const TCHAR* Name) const
+{
+	if (!bRealisticLight || !Shape)
+	{
+		return;
+	}
+	if (UMaterialInterface* Look = LoadObject<UMaterialInterface>(nullptr, *FString::Printf(TEXT("/Game/GameStudioNature/M/%s.%s"), Name, Name), nullptr, LOAD_NoWarn | LOAD_Quiet))
+	{
+		Shape->SetMaterial(0, Look);
+	}
+}
+
+void AStudioGameMode::Person(AActor* Owner)
+{
+	if (!bRealisticLight)
+	{
+		return;
+	}
+	USkeletalMesh* Mesh = LoadObject<USkeletalMesh>(nullptr, TEXT("/Game/GameStudioNature/People/Woman/Female_Adult_11.Female_Adult_11"), nullptr, LOAD_NoWarn | LOAD_Quiet);
+	UAnimSequence* Idle = LoadObject<UAnimSequence>(nullptr, TEXT("/Game/GameStudioNature/People/Woman/Anim/f_idle_neutral_01_max.f_idle_neutral_01_max"), nullptr, LOAD_NoWarn | LOAD_Quiet);
+	if (!Mesh || !Idle)
+	{
+		return;
+	}
+	TInlineComponentArray<UStaticMeshComponent*> Shapes(Owner);
+	for (UStaticMeshComponent* Shape : Shapes)
+	{
+		Shape->SetVisibility(false);
+	}
+	USkeletalMeshComponent* C = NewObject<USkeletalMeshComponent>(Owner);
+	C->SetMobility(EComponentMobility::Movable);
+	C->SetSkeletalMesh(Mesh);
+	for (const TCHAR* Part : {TEXT("Body"), TEXT("Head"), TEXT("Opacity")})
+	{
+		const FString Name = FString::Printf(TEXT("M_Woman%s"), Part);
+		if (UMaterialInterface* Look = LoadObject<UMaterialInterface>(nullptr, *FString::Printf(TEXT("/Game/GameStudioNature/People/Woman/%s.%s"), *Name, *Name), nullptr, LOAD_NoWarn | LOAD_Quiet))
+		{
+			C->SetMaterialByName(*(FString(TEXT("f011_")) + FString(Part).ToLower()), Look);
+		}
+	}
+	C->SetupAttachment(Owner->GetRootComponent());
+	C->SetRelativeRotation(FRotator(0.0, -90.0, 0.0));
+	C->SetRelativeScale3D(FVector(1.0 / FMath::Max(0.2, Owner->GetActorScale3D().Z)));
+	C->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
+	C->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+	C->RegisterComponent();
+	Owner->AddInstanceComponent(C);
+	C->PlayAnimation(Idle, true);
+}
+
+void AStudioGameMode::PlantGround(AActor* Ground)
+{
+	auto Plant = [this, Ground](const TCHAR* Name, double Spacing, double Chance, double MinScale, double MaxScale, int32 CullMetres, bool bShadow, int32 Seed)
+	{
+		UStaticMesh* Mesh = NatureMesh(Name);
+		if (!Mesh)
+		{
+			return;
+		}
+		UHierarchicalInstancedStaticMeshComponent* C = NewObject<UHierarchicalInstancedStaticMeshComponent>(Ground);
+		C->SetMobility(EComponentMobility::Movable);
+		C->SetStaticMesh(Mesh);
+		C->SetupAttachment(Ground->GetRootComponent());
+		C->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		C->SetCastShadow(bShadow);
+		C->SetCullDistances(CullMetres * 70, CullMetres * 100);
+		FRandomStream Random(Seed);
+		TArray<FTransform> Places;
+		for (double X = -World.Width / 2 + 1; X < World.Width / 2 - 1; X += Spacing)
+		{
+			for (double Z = -World.Depth / 2 + 1; Z < World.Depth / 2 - 1; Z += Spacing)
+			{
+				const double PX = X + Random.FRandRange(-0.5f, 0.5f) * Spacing;
+				const double PZ = Z + Random.FRandRange(-0.5f, 0.5f) * Spacing;
+				const float Yaw = Random.FRandRange(0.f, 360.f);
+				const float Size = Random.FRandRange(static_cast<float>(MinScale), static_cast<float>(MaxScale));
+				// Thicker in drifts, thinner between them.
+				const double Drift = 0.5 + 0.5 * FMath::PerlinNoise2D(FVector2D(PX, PZ) * 0.11 + FVector2D(Seed, Seed));
+				bool bFree = Random.FRand() < Chance * FMath::Clamp(0.25 + 1.5 * Drift, 0.0, 1.0);
+				for (const FStudioObject& O : World.Objects)
+				{
+					const double Keep = O.Type == TEXT("water") || O.Type == TEXT("zone") ? O.Radius + 0.2 : O.Type == TEXT("gate") ? O.Width / 2 + 1.0 : O.Type == TEXT("rock") ? 0.8 : 0.4;
+					bFree &= FVector2D(O.X - PX, O.Z - PZ).Size() > Keep;
+				}
+				if (bFree)
+				{
+					Places.Add(FTransform(FRotator(0, Yaw, 0), FStudioWorld::ToUnreal(PX, PZ), FVector(Size)));
+				}
+			}
+		}
+		C->RegisterComponent();
+		Ground->AddInstanceComponent(C);
+		C->AddInstances(Places, false);
+		UE_LOG(LogStudio, Display, TEXT("planted %d of %s"), Places.Num(), Name);
+	};
+	Plant(TEXT("Grass"), 0.55, 1.15, 0.45, 0.95, 45, false, 11);
+	Plant(TEXT("Fern"), 2.6, 0.22, 0.6, 1.2, 70, true, 23);
+	// Open land and a belt of trees beyond the map's edge, where the player cannot go.
+	if (UMaterialInterface* Photo = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/GameStudioNature/M/M_Ground.M_Ground"), nullptr, LOAD_NoWarn | LOAD_Quiet))
+	{
+		UStaticMeshComponent* Land = Part(Ground, Cube, FVector(0, 0, -0.58), FVector(1600, 1600, 1.0), FColor::White, false);
+		Land->SetMaterial(0, Photo);
+	}
+	const TPair<const TCHAR*, double> Kinds[] = {{TEXT("TreeRoundFar"), 0.5}, {TEXT("TreeTallFar"), 1.25}};
+	for (int32 K = 0; K < 2; ++K)
+	{
+		UStaticMesh* Mesh = NatureMesh(Kinds[K].Key);
+		if (!Mesh)
+		{
+			continue;
+		}
+		UHierarchicalInstancedStaticMeshComponent* C = NewObject<UHierarchicalInstancedStaticMeshComponent>(Ground);
+		C->SetMobility(EComponentMobility::Movable);
+		C->SetStaticMesh(Mesh);
+		C->SetupAttachment(Ground->GetRootComponent());
+		C->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		FRandomStream Random(31 + K);
+		TArray<FTransform> Places;
+		for (int32 I = 0; I < (K == 0 ? 70 : 110); ++I)
+		{
+			const double Angle = Random.FRandRange(0.f, 2.f * UE_PI);
+			const double Out = 8.0 + 70.0 * FMath::Square(Random.FRand());
+			// Along a rounded rectangle around the map.
+			const double CX = FMath::Cos(Angle), CZ = FMath::Sin(Angle);
+			const double Edge = FMath::Min(World.Width / 2 / FMath::Max(0.001, FMath::Abs(CX)), World.Depth / 2 / FMath::Max(0.001, FMath::Abs(CZ)));
+			const double Size = Kinds[K].Value * Random.FRandRange(0.75f, 1.3f);
+			Places.Add(FTransform(FRotator(0, Random.FRandRange(0.f, 360.f), 0), FStudioWorld::ToUnreal(CX * (Edge + Out), CZ * (Edge + Out)), FVector(Size)));
+		}
+		C->RegisterComponent();
+		Ground->AddInstanceComponent(C);
+		C->AddInstances(Places, false);
+	}
 }
 
 AActor* AStudioGameMode::BuildObject(const FStudioObject& O)
@@ -308,10 +503,15 @@ AActor* AStudioGameMode::BuildObject(const FStudioObject& O)
 			Part(A, Cylinder, FVector(0, 0, 1.1), FVector(0.5, 0.5, 2.2), Bark, true);
 			Part(A, Sphere, FVector(0, 0, 3.1), FVector(3.0, 3.0, 2.6), FColor(74, 135, 63), false);
 		}
+		const bool bBaobab = O.Variant == TEXT("baobab");
+		const bool bTall = O.Variant == TEXT("tall");
+		// The scanned firs lose their needles in Unreal, so tall trees use the leafy tree at their own size.
+		Dress(A, O.Id, bBaobab || bTall ? TEXT("TreeBaobab") : TEXT("TreeRound"), bBaobab ? 1.35 : bTall ? 1.1 : 0.42);
 	}
 	else if (O.Type == TEXT("rock"))
 	{
 		Part(A, Sphere, FVector(0, 0, 0.45), FVector(1.3, 1.6, 1.0), FColor(138, 143, 150), true);
+		Dress(A, O.Id, TEXT("Rock"), 1.15);
 	}
 	else if (O.Type == TEXT("collectible"))
 	{
@@ -322,17 +522,34 @@ AActor* AStudioGameMode::BuildObject(const FStudioObject& O)
 		const FLinearColor Cloth = FStudioWorld::ParseColor(O.Color, FLinearColor::FromSRGBColor(FColor(200, 135, 58)));
 		Part(A, Cylinder, FVector(0, 0, 0.9), FVector(0.8, 0.8, 1.8), Cloth.ToFColor(true), true);
 		Part(A, Sphere, FVector(0, 0, 1.95), FVector(0.45, 0.45, 0.45), FColor(107, 74, 50), false);
+		Person(A);
 	}
 	else if (O.Type == TEXT("gate"))
 	{
 		const FColor Stone(158, 140, 115);
 		const double Half = FMath::Max(1.0, O.Width) / 2.0;
-		Part(A, Cube, FVector(0, -Half - 0.45, 2.2), FVector(0.9, 0.9, 4.4), Stone, true);
-		Part(A, Cube, FVector(0, Half + 0.45, 2.2), FVector(0.9, 0.9, 4.4), Stone, true);
-		Part(A, Cube, FVector(0, 0, 4.6), FVector(1.0, Half * 2 + 1.8, 0.5), Stone, false);
+		Surface(Part(A, Cube, FVector(0, -Half - 0.45, 2.2), FVector(0.9, 0.9, 4.4), Stone, true), TEXT("M_Stone"));
+		Surface(Part(A, Cube, FVector(0, Half + 0.45, 2.2), FVector(0.9, 0.9, 4.4), Stone, true), TEXT("M_Stone"));
+		Surface(Part(A, Cube, FVector(0, 0, 4.6), FVector(1.0, Half * 2 + 1.8, 0.5), Stone, false), TEXT("M_Stone"));
 		// Closed until a rule opens it (explore.openGate).
 		FGate Gate;
 		Gate.Door = Part(A, Cube, FVector(0, 0, 1.6), FVector(0.3, Half * 2, 3.2), FColor(115, 77, 41), true);
+		if (UStaticMesh* DoorModel = NatureMesh(TEXT("Door")))
+		{
+			// The model is 2.01 m wide (along its X), 0.13 m thick and 2.96 m tall, standing on its origin.
+			Gate.Door->SetVisibility(false);
+			UStaticMeshComponent* Look = NewObject<UStaticMeshComponent>(A);
+			Look->SetMobility(EComponentMobility::Movable);
+			Look->SetStaticMesh(DoorModel);
+			Look->SetupAttachment(A->GetRootComponent());
+			Look->SetRelativeLocationAndRotation(FVector(0, 0, 3.0), FRotator(0, 90, 0));
+			Look->SetRelativeScale3D(FVector(Half * 2 * 100.0 / 201.2, 1.6, 320.0 / 296.5));
+			Look->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
+			Look->RegisterComponent();
+			A->AddInstanceComponent(Look);
+			Gate.Look = Look;
+			Gate.LookZ = Look->GetRelativeLocation().Z;
+		}
 		Gates.Add(O.Id, Gate);
 	}
 	else if (O.Type == TEXT("zone"))
@@ -345,19 +562,34 @@ AActor* AStudioGameMode::BuildObject(const FStudioObject& O)
 	}
 	else if (O.Type == TEXT("sign"))
 	{
-		Part(A, Cube, FVector(0, 0, 0.7), FVector(0.15, 0.15, 1.4), Bark, true);
-		Part(A, Cube, FVector(0, 0, 1.45), FVector(0.1, 1.4, 0.7), FColor(168, 128, 77), false);
+		Surface(Part(A, Cube, FVector(0, 0, 0.7), FVector(0.15, 0.15, 1.4), Bark, true), TEXT("M_Wood"));
+		Surface(Part(A, Cube, FVector(0, 0, 1.45), FVector(0.1, 1.4, 0.7), FColor(168, 128, 77), false), TEXT("M_Wood"));
 	}
 	else if (O.Type == TEXT("torch"))
 	{
-		Part(A, Cylinder, FVector(0, 0, 0.6), FVector(0.15, 0.15, 1.2), Bark, true);
-		Part(A, Sphere, FVector(0, 0, 1.35), FVector(0.3, 0.3, 0.3), FColor(255, 153, 51), false);
+		Surface(Part(A, Cylinder, FVector(0, 0, 0.6), FVector(0.15, 0.15, 1.2), Bark, true), TEXT("M_Wood"));
+		UStaticMeshComponent* Fire = Part(A, Sphere, FVector(0, 0, 1.35), FVector(0.3, 0.3, 0.3), FColor(255, 153, 51), false);
+		if (UStaticMesh* Lantern = NatureMesh(TEXT("Lantern")))
+		{
+			// A brass lantern (0.12 m wide, 0.29 m tall) on the post, with a small flame inside.
+			UStaticMeshComponent* Lamp = Part(A, Lantern, FVector(0, 0, 1.2), FVector(1.4), FColor::White, false);
+			Lamp->SetMaterial(0, Lantern->GetMaterial(0));
+			Fire->SetRelativeLocation(FVector(0, 0, 138));
+			Fire->SetRelativeScale3D(FVector(0.06, 0.06, 0.09));
+		}
 		UPointLightComponent* Flame = NewObject<UPointLightComponent>(A);
 		Flame->SetMobility(EComponentMobility::Movable);
 		Flame->SetupAttachment(A->GetRootComponent());
 		Flame->SetRelativeLocation(FVector(0, 0, 150));
 		Flame->SetLightColor(FLinearColor(1.f, 0.65f, 0.3f));
 		Flame->SetAttenuationRadius(600.f);
+		if (bRealisticLight)
+		{
+			// In daylight a lantern is a small glow; the default brightness turned nearby grass white.
+			Flame->SetIntensity(400.f);
+			Flame->SetAttenuationRadius(350.f);
+			Flame->SetRelativeLocation(FVector(0, 0, 138));
+		}
 		Flame->RegisterComponent();
 		A->AddInstanceComponent(Flame);
 	}
@@ -410,6 +642,13 @@ void AStudioGameMode::AddRealisticSky(const FActorSpawnParameters& Params)
 		Haze->SetFogHeightFalloff(0.2f);
 		Haze->SetStartDistance(1500.f);
 	}
+	// A little under automatic exposure, so pale ground and clothes keep their colour in full sun.
+	if (APostProcessVolume* Look = GetWorld()->SpawnActor<APostProcessVolume>(APostProcessVolume::StaticClass(), FTransform::Identity, Params))
+	{
+		Look->bUnbound = true;
+		Look->Settings.bOverride_AutoExposureBias = true;
+		Look->Settings.AutoExposureBias = -0.55f;
+	}
 }
 
 // The configured look (Config: PlayerLook) goes into the character's "VisualOverride" child actor
@@ -458,7 +697,48 @@ bool AStudioGameMode::KeepPlayerLook(ACharacter* Player)
 			Mesh->SetVisibility(false, false);
 		}
 	}
-	return Slot->GetChildActor() != nullptr && Slot->GetChildActor()->IsA(Look);
+	AActor* Shown = Slot->GetChildActor();
+	if (Shown && Shown->IsA(Look))
+	{
+		CoverHair(Shown);
+	}
+	return Shown != nullptr && Shown->IsA(Look);
+}
+
+void AStudioGameMode::CoverHair(AActor* Look)
+{
+	// Kellan's hair is strands only, which Metal SM5 cannot draw, so his scalp gets short hair of its own.
+	static const FName Tag(TEXT("StudioHairCap"));
+	if (!bRealisticLight || Look->Tags.Contains(Tag))
+	{
+		return;
+	}
+	Look->Tags.Add(Tag);
+	UStaticMesh* Cap = LoadObject<UStaticMesh>(nullptr, TEXT("/Game/GameStudioNature/People/Kellan/HairCap.HairCap"), nullptr, LOAD_NoWarn | LOAD_Quiet);
+	TInlineComponentArray<USkeletalMeshComponent*> Meshes(Look);
+	for (USkeletalMeshComponent* Face : Meshes)
+	{
+		const USkinnedAsset* Asset = Face->GetSkinnedAsset();
+		if (!Cap || !Asset || Asset->GetName() != TEXT("Kellan_FaceMesh"))
+		{
+			continue;
+		}
+		const int32 Head = Asset->GetRefSkeleton().FindBoneIndex(TEXT("head"));
+		if (Head == INDEX_NONE)
+		{
+			continue;
+		}
+		UStaticMeshComponent* C = NewObject<UStaticMeshComponent>(Look);
+		C->SetMobility(EComponentMobility::Movable);
+		C->SetStaticMesh(Cap);
+		C->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
+		// The cap is shaped in the face's own space at rest; hold it there relative to the head bone.
+		C->SetupAttachment(Face, TEXT("head"));
+		C->SetRelativeTransform(FAnimationRuntime::GetComponentSpaceTransformRefPose(Asset->GetRefSkeleton(), Head).Inverse());
+		C->RegisterComponent();
+		Look->AddInstanceComponent(C);
+		UE_LOG(LogStudio, Display, TEXT("hair cap on %s"), *Face->GetName());
+	}
 }
 
 bool AStudioGameMode::Collect(const FString& Id)
@@ -526,6 +806,25 @@ FString AStudioGameMode::FindFocus(const FVector& Location) const
 		}
 	}
 	return Best;
+}
+
+void AStudioGameMode::FreePointer(APlayerController* PC, bool bFree)
+{
+	bPointerFreed = bFree;
+	PC->bShowMouseCursor = bFree;
+	if (bFree)
+	{
+		FInputModeGameAndUI Mode;
+		Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		Mode.SetHideCursorDuringCapture(false);
+		PC->SetInputMode(Mode);
+		PC->SetIgnoreLookInput(true);
+	}
+	else
+	{
+		PC->SetInputMode(FInputModeGameOnly());
+		PC->ResetIgnoreLookInput();
+	}
 }
 
 void AStudioGameMode::ShowMessage(const FString& Text, float Seconds)
@@ -710,6 +1009,29 @@ void AStudioGameMode::Tick(float DeltaSeconds)
 		FVector At = Door->GetRelativeLocation();
 		At.Z = Gate.StartZ - 420.0 * FMath::SmoothStep(0.0, 1.0, static_cast<double>(Gate.Sunk));
 		Door->SetRelativeLocation(At);
+		if (UStaticMeshComponent* Look = Gate.Look.Get())
+		{
+			FVector LookAt = Look->GetRelativeLocation();
+			LookAt.Z = Gate.LookZ + (At.Z - Gate.StartZ);
+			Look->SetRelativeLocation(LookAt);
+		}
+	}
+	// Games that look around with the mouse hold the pointer; Esc gives it back (as in the Godot games) and a
+	// click in the game takes it again. Without this the pointer stayed captured until the game was closed.
+	if (!bShowPointer && !bSmoke && ScreenshotPath.IsEmpty())
+	{
+		if (APlayerController* Look = GetWorld()->GetFirstPlayerController())
+		{
+			if (!bPointerFreed && Look->WasInputKeyJustPressed(EKeys::Escape))
+			{
+				FreePointer(Look, true);
+				ShowMessage(TEXT("The mouse is free. Click in the game to look around again."), 3.f);
+			}
+			else if (bPointerFreed && Look->WasInputKeyJustPressed(EKeys::LeftMouseButton))
+			{
+				FreePointer(Look, false);
+			}
+		}
 	}
 	if (ACharacter* Player = PlayerCharacter())
 	{
@@ -771,6 +1093,19 @@ void AStudioGameMode::Tick(float DeltaSeconds)
 			}
 			PC->SetControlRotation(FRotator(-15.0, 0.0, 0.0));
 		}
+		if (!ScreenshotNear.IsEmpty())
+		{
+			// <object id> or <object id>@<metres away>
+			FString Id = ScreenshotNear, Away = TEXT("6");
+			ScreenshotNear.Split(TEXT("@"), &Id, &Away);
+			const FStudioObject* Near = Find(Id);
+			ACharacter* Player = PlayerCharacter();
+			if (Near && Player)
+			{
+				TeleportPlayer(Player, FStudioWorld::ToUnreal(Near->X, Near->Z + FMath::Clamp(FCString::Atod(*Away), 1.0, 60.0), 1.2));
+				ScreenshotNear.Empty();
+			}
+		}
 		// Run from the editor (uncooked), shaders and textures compile while the game runs: wait for them,
 		// then give the light two more seconds' worth of frames to settle.
 		bool bCompiling = false;
@@ -783,7 +1118,29 @@ void AStudioGameMode::Tick(float DeltaSeconds)
 			const FString Path = FPaths::ConvertRelativePathToFull(FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("Screenshots"), FPaths::GetBaseFilename(ScreenshotPath) + TEXT(".png")));
 			const bool bSaved = SaveScreenshot(Path);
 			UE_LOG(LogStudio, Display, TEXT("screenshot %s: %s"), bSaved ? TEXT("saved") : TEXT("failed"), *Path);
-			FPlatformMisc::RequestExit(false);
+			if (!FParse::Param(FCommandLine::Get(), TEXT("studio-measure")))
+			{
+				FPlatformMisc::RequestExit(false);
+			}
+		}
+		else if (Frames >= 120 && ScreenshotWait > 120)
+		{
+			// -studio-measure: after the picture, time 300 frames of the same view.
+			FrameTimes.Add(DeltaSeconds);
+			ThreadTimes += FVector(FPlatformTime::ToMilliseconds(GGameThreadTime), FPlatformTime::ToMilliseconds(GRenderThreadTime), FPlatformTime::ToMilliseconds(RHIGetGPUFrameCycles()));
+			if (FrameTimes.Num() == 300)
+			{
+				ThreadTimes /= 300.0;
+				UE_LOG(LogStudio, Display, TEXT("frame parts: game %.1f ms, render %.1f ms, GPU %.1f ms"), ThreadTimes.X, ThreadTimes.Y, ThreadTimes.Z);
+				double Sum = 0.0, Worst = 0.0;
+				for (const float T : FrameTimes)
+				{
+					Sum += T;
+					Worst = FMath::Max(Worst, static_cast<double>(T));
+				}
+				UE_LOG(LogStudio, Display, TEXT("frame rate: %.1f fps average, %.1f ms worst frame"), FrameTimes.Num() / Sum, Worst * 1000.0);
+				FPlatformMisc::RequestExit(false);
+			}
 		}
 	}
 	if (bSmoke)
@@ -820,9 +1177,22 @@ bool AStudioGameMode::SaveScreenshot(const FString& Path)
 	Capture->CaptureSource = ESceneCaptureSource::SCS_FinalColorLDR;
 	Capture->TextureTarget = Target;
 	Capture->FOVAngle = View->GetFOVAngle();
+	if (bRealisticLight)
+	{
+		// Lumen builds its light up over frames, so the capture keeps its state and takes many.
+		Capture->bAlwaysPersistRenderingState = true;
+		Capture->PostProcessBlendWeight = 1.f;
+		Capture->PostProcessSettings.bOverride_DynamicGlobalIlluminationMethod = true;
+		Capture->PostProcessSettings.DynamicGlobalIlluminationMethod = EDynamicGlobalIlluminationMethod::Lumen;
+		Capture->PostProcessSettings.bOverride_ReflectionMethod = true;
+		Capture->PostProcessSettings.ReflectionMethod = EReflectionMethod::Lumen;
+	}
 	Capture->RegisterComponent();
 	Capture->SetWorldLocationAndRotation(View->GetCameraLocation(), View->GetCameraRotation());
-	Capture->CaptureScene();
+	for (int32 Pass = bRealisticLight ? 48 : 1; Pass > 0; --Pass)
+	{
+		Capture->CaptureScene();
+	}
 	TArray<FColor> Pixels;
 	FTextureRenderTargetResource* Resource = Target->GameThread_GetRenderTargetResource();
 	const bool bRead = Resource && Resource->ReadPixels(Pixels);
@@ -883,8 +1253,16 @@ void AStudioGameMode::TickSmokeTest(float DeltaSeconds)
 			}
 			else
 			{
-				// Characters that look around with the mouse keep the pointer hidden while playing.
+				// Characters that look around with the mouse keep the pointer hidden while playing; Esc frees it.
 				Add(TEXT("the pointer is hidden for looking around with the mouse"), PC && !bShown, Detail);
+				if (APlayerController* Look = GetWorld()->GetFirstPlayerController())
+				{
+					FreePointer(Look, true);
+					const bool bFreed = Look->bShowMouseCursor && Look->IsLookInputIgnored();
+					FreePointer(Look, false);
+					const bool bBack = !Look->bShowMouseCursor && !Look->IsLookInputIgnored();
+					Add(TEXT("Esc frees the mouse and a click takes it back"), bFreed && bBack, FString::Printf(TEXT("freed %d, back %d"), bFreed, bBack));
+				}
 			}
 		}
 		if (!PlayerLook.IsNull())
@@ -893,6 +1271,24 @@ void AStudioGameMode::TickSmokeTest(float DeltaSeconds)
 			const UChildActorComponent* Slot = LookSlot.Get();
 			const AActor* Shown = Slot ? Slot->GetChildActor() : nullptr;
 			Add(TEXT("the player has the chosen look"), bLook && !Player->GetMesh()->IsVisible(), LookProblem.IsEmpty() ? FString::Printf(TEXT("%s on %s"), Shown ? *Shown->GetClass()->GetName() : TEXT("nothing"), *Player->GetClass()->GetName()) : LookProblem);
+		}
+		if (bRealisticLight)
+		{
+			// Game Studio imports these on the first build (unreal_nature.rs); packaging must have kept them.
+			TArray<FString> Missing;
+			for (const TCHAR* Name : {TEXT("TreeRound"), TEXT("TreeRoundFar"), TEXT("TreeBaobab"), TEXT("TreeTallFar"), TEXT("Rock"), TEXT("Fern"), TEXT("Grass"), TEXT("Door"), TEXT("Lantern"), TEXT("People/Kellan/HairCap")})
+			{
+				const FString Path = FString::Printf(TEXT("/Game/GameStudioNature/%s.%s"), Name, *FPaths::GetCleanFilename(Name));
+				if (!LoadObject<UStaticMesh>(nullptr, *Path, nullptr, LOAD_NoWarn | LOAD_Quiet))
+				{
+					Missing.Add(Name);
+				}
+			}
+			if (!LoadObject<USkeletalMesh>(nullptr, TEXT("/Game/GameStudioNature/People/Woman/Female_Adult_11.Female_Adult_11"), nullptr, LOAD_NoWarn | LOAD_Quiet))
+			{
+				Missing.Add(TEXT("People/Woman"));
+			}
+			Add(TEXT("the photographed trees, rocks, grass, door, lanterns and villager are in"), Missing.Num() == 0, Missing.Num() == 0 ? TEXT("11 of 11") : TEXT("missing: ") + FString::Join(Missing, TEXT(", ")));
 		}
 		{
 			const FVector Spawn = FStudioWorld::ToUnreal(World.SpawnX, World.SpawnZ);

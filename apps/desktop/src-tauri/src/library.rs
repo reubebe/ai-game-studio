@@ -32,7 +32,7 @@ const MAX_DOWNLOAD: u64 = 300 * 1024 * 1024;
 const MAX_PAGE: usize = 2 * 1024 * 1024;
 const MAX_PAGE_TEXT: usize = 12_000;
 
-fn client(timeout: u64) -> AppResult<reqwest::Client> {
+pub(crate) fn client(timeout: u64) -> AppResult<reqwest::Client> {
     reqwest::Client::builder()
         .user_agent(USER_AGENT)
         .connect_timeout(Duration::from_secs(10))
@@ -42,7 +42,7 @@ fn client(timeout: u64) -> AppResult<reqwest::Client> {
         .map_err(|e| AppError::Internal(format!("HTTP client: {e}")))
 }
 
-fn net_err(what: &str) -> impl Fn(reqwest::Error) -> AppError + '_ {
+pub(crate) fn net_err(what: &str) -> impl Fn(reqwest::Error) -> AppError + '_ {
     move |e| AppError::Unavailable(if e.is_timeout() { format!("{what} did not answer in time") } else { format!("Could not reach {what}") })
 }
 
@@ -119,7 +119,7 @@ pub async fn thumbnail(id: &str) -> AppResult<String> {
     Ok(format!("data:{mime};base64,{}", base64::engine::general_purpose::STANDARD.encode(bytes)))
 }
 
-async fn read_limited(mut resp: reqwest::Response, limit: usize) -> AppResult<Vec<u8>> {
+pub(crate) async fn read_limited(mut resp: reqwest::Response, limit: usize) -> AppResult<Vec<u8>> {
     let mut out = Vec::new();
     while let Some(chunk) = resp.chunk().await.map_err(|_| AppError::Unavailable("The download stopped".into()))? {
         if out.len() + chunk.len() > limit {
@@ -289,7 +289,7 @@ pub struct Conversion {
 }
 
 const CONVERTER: &str = include_str!("../assets/convert_character.gd");
-const ROCKETBOX_LICENSE: &str = "Microsoft Rocketbox avatar library (https://github.com/microsoft/Microsoft-Rocketbox),\nconverted to glTF by Game Studio.\n\nMIT License\n\nCopyright (c) 2020 Microsoft\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n";
+pub(crate) const ROCKETBOX_LICENSE: &str = "Microsoft Rocketbox avatar library (https://github.com/microsoft/Microsoft-Rocketbox),\nconverted to glTF by Game Studio.\n\nMIT License\n\nCopyright (c) 2020 Microsoft\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n";
 
 const WOMAN: Conversion = Conversion {
     person: "Female_Adult_01.fbx",

@@ -15,6 +15,7 @@ pub mod projects;
 pub mod runner;
 pub mod snapshots;
 pub mod timeutil;
+pub mod unreal_nature;
 pub mod unreal_sample;
 
 use db::{AuditEntry, Db, RecentProject};
@@ -744,7 +745,7 @@ fn s(v: &[&str]) -> Vec<String> {
 
 /// Unreal runs: compile the project's C++ module with UnrealBuildTool, then open the editor, or
 /// package with BuildCookRun into exports/unreal-macos and optionally run the packaged app.
-fn plan_unreal(root: &Path, work: &Path, engine: &ManifestEngine, action: &str) -> AppResult<Vec<RunStep>> {
+fn plan_unreal(root: &Path, work: &Path, engine: &ManifestEngine, action: &str, nature_cache: &Path) -> AppResult<Vec<RunStep>> {
     let report = engines::discover_unreal();
     let install = report.installs.iter().find(|i| i.version == engine.version).ok_or_else(|| {
         let found: Vec<&str> = report.installs.iter().map(|i| i.version.as_str()).collect();
@@ -795,7 +796,30 @@ fn plan_unreal(root: &Path, work: &Path, engine: &ManifestEngine, action: &str) 
         cwd: work.to_path_buf(),
     };
     let app = out.join("Mac").join(format!("{name}.app"));
-    let mut steps = vec![compile, package];
+    let mut steps = vec![compile];
+    // The realistic template's photographed trees, rocks, grass, door, lanterns and villager (unreal_nature.rs),
+    // added on the first build. Both steps report problems and carry on: the game then draws simple shapes.
+    if unreal_nature::needed(work) {
+        let me = std::env::current_exe().map_err(|e| AppError::Internal(format!("Cannot find Game Studio itself: {e}")))?;
+        steps.push(RunStep {
+            label: "Prepare trees and people".into(),
+            program: me,
+            args: vec![unreal_nature::CLI_FLAG.into(), work.to_string_lossy().to_string(), nature_cache.to_string_lossy().to_string()],
+            cwd: work.to_path_buf(),
+        });
+        steps.push(RunStep {
+            label: "Import trees and people".into(),
+            program: engine_root.join("Engine/Binaries/Mac/UnrealEditor-Cmd"),
+            args: vec![
+                uproject.to_string_lossy().to_string(),
+                "-run=pythonscript".into(),
+                format!("-script={}", work.join(unreal_nature::WORK).join("unreal_nature.py").to_string_lossy()),
+                "-nullrhi".into(), "-unattended".into(), "-nosplash".into(), "-stdout".into(), "-NoLogTimes".into(),
+            ],
+            cwd: work.to_path_buf(),
+        });
+    }
+    steps.push(package);
     match action {
         // -LLM keeps Unreal's memory tracker on. Without it, Unreal 5.8 switches the tracker off on the game
         // thread while macOS may still be allocating inside a tracker scope on the main thread, and the game
@@ -814,7 +838,7 @@ fn plan_run(state: &AppState, root: &Path, action: &str, output: Option<&str>) -
     let target = engine.target.clone();
     match engine.id.as_str() {
         "unity" => plan_unity(root, &work, &engine, action, output),
-        "unreal" => plan_unreal(root, &work, &engine, action),
+        "unreal" => plan_unreal(root, &work, &engine, action, &state.data_dir.join("unreal-nature")),
         "godot" => {
             let install = best_godot(state)?;
             let godot = PathBuf::from(&install.executable);
@@ -1060,6 +1084,11 @@ fn smoke_extras_from_args() -> Vec<String> {
 }
 
 pub fn run() {
+    // Build step for the realistic Unreal template (unreal_nature.rs); runs without a window and exits.
+    let args: Vec<String> = std::env::args().collect();
+    if args.get(1).map(|a| a == unreal_nature::CLI_FLAG).unwrap_or(false) {
+        std::process::exit(unreal_nature::run_cli(&args[2..]));
+    }
     let smoke_dir = smoke_dir_from_args();
     let smoke_extras = if smoke_dir.is_some() { smoke_extras_from_args() } else { Vec::new() };
     // The self-test needs its window visible. Its input goes to the web view, not through the HID system, so

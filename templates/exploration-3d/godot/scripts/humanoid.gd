@@ -126,6 +126,9 @@ static func _clip(sk: Skeleton3D, base: String, frame: Dictionary, spec: Diction
 		var parent := sk.get_bone_parent(hips)
 		var to_parent := sk.get_bone_global_rest(parent).basis.orthonormalized().inverse() if parent >= 0 else Basis.IDENTITY
 		var rest_pos := sk.get_bone_rest(hips).origin
+		# A retargeted skeleton (Godot's VRM import) scales every position key by its motion_scale; without
+		# undoing it Godette walked 0.21 m low, sunk to the ankles.
+		var unscale := 1.0 / sk.motion_scale if sk.motion_scale > 0.00001 else 1.0
 		for s in steps + 1:
 			var t := length * float(s) / float(steps)
 			var offset := Vector3.ZERO
@@ -133,7 +136,7 @@ static func _clip(sk: Skeleton3D, base: String, frame: Dictionary, spec: Diction
 				var m: Array = move[axis]
 				var amount := float(m[0]) + float(m[1]) * sin(TAU * (float(m[3]) * t / length + float(m[2])))
 				offset += (frame.get(axis, Vector3.UP) as Vector3) * amount * float(frame["leg"])
-			anim.position_track_insert_key(track, t, rest_pos + to_parent * offset)
+			anim.position_track_insert_key(track, t, (rest_pos + to_parent * offset) * unscale)
 	return anim
 
 

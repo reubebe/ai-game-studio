@@ -98,6 +98,31 @@ func run(main: Node) -> void:
 	if not playing.is_empty():
 		var idle := playing.keys().filter(func(id): return str(playing[id]) == "")
 		_check("animated villagers and models play their animations", idle.is_empty(), JSON.stringify(playing))
+	# Characters stand on the ground: the lowest bone (a toe) is just above their feet, not under the grass.
+	var feet := {}
+	var sunk := []
+	var standing: Dictionary = {"player": player}
+	for id in lookup:
+		standing[id] = lookup[id]
+	for id in standing:
+		var node: Node3D = standing[id]
+		var low := INF
+		var low_bone := ""
+		for sk in node.find_children("*", "Skeleton3D", true, false):
+			var skel := sk as Skeleton3D
+			for b in skel.get_bone_count():
+				var bone_y := (skel.global_transform * skel.get_bone_global_pose(b)).origin.y
+				if bone_y < low:
+					low = bone_y
+					low_bone = skel.get_bone_name(b)
+		if low == INF:
+			continue
+		var above := low - node.global_position.y
+		feet[id] = "%s %.2f" % [low_bone, above]
+		if above < -0.08 or above > 0.35:
+			sunk.append(id)
+	if not feet.is_empty():
+		_check("characters stand on the ground, not sunk into it", sunk.is_empty(), "lowest bone above the feet (m): %s" % JSON.stringify(feet))
 	var solid := 0
 	for model_id in models:
 		var m: Node3D = lookup[model_id]

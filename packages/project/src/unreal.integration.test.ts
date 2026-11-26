@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { fileURLToPath } from "node:url";
 import { dirname, join, resolve } from "node:path";
 import { generateProject } from "./index";
 
@@ -119,13 +120,27 @@ describe.skipIf(!ROOT || !SAMPLE_ROOT)("Unreal integration, realistic people (re
     expect(r.out).not.toMatch(/warning: /);
   }, 1260000);
 
+  // The build's two extra steps for this template (lib.rs, plan_unreal): Game Studio prepares the photographed
+  // trees and people (unreal_nature.rs; needs the internet once, about 390 MB, cached in UNREAL_NATURE_CACHE),
+  // then Unreal's editor imports them.
+  it("adds Game Studio's photographed trees, rocks, grass, door, lanterns and villager", () => {
+    const app = resolve(process.env["GAME_STUDIO_BIN"] ?? fileURLToPath(new URL("../../../apps/desktop/src-tauri/target/debug/game-studio", import.meta.url)));
+    const cache = resolve(process.env["UNREAL_NATURE_CACHE"] ?? join(tmpdir(), "gamestudio-unreal-nature-cache"));
+    const prep = run(app, ["--prepare-unreal-nature", work, cache], work, 3600000);
+    expect(prep.out, prep.out.slice(-3000)).toMatch(/nature: ready to import/);
+    const imp = run(join(ROOT!, "Engine/Binaries/Mac/UnrealEditor-Cmd"), [uproject, "-run=pythonscript", `-script=${join(work, "Intermediate/GameStudioNature/unreal_nature.py")}`, "-nullrhi", "-unattended", "-nosplash", "-stdout", "-NoLogTimes"], work, 3600000);
+    expect(imp.out, imp.out.slice(-3000)).toMatch(/nature: imported, version/);
+    expect(imp.out).toMatch(/nature: hair cap \d+ triangles/);
+    expect(readFileSync(join(work, "Content/GameStudioNature/.studio-nature"), "utf8").trim()).not.toBe("");
+  }, 7300000);
+
   const checkReport = (output: string, code: number) => {
     const line = output.split("\n").find((l) => l.startsWith("GSTUDIO_SMOKE "));
     expect(line, output.slice(-3000)).toBeDefined();
     const report = JSON.parse(line!.slice("GSTUDIO_SMOKE ".length));
     expect(report.checks.filter((c: { ok: boolean }) => !c.ok)).toEqual([]);
     const names = report.checks.map((c: { name: string }) => c.name);
-    expect(names).toEqual(expect.arrayContaining(["the player has the chosen look", "the pointer is hidden for looking around with the mouse", "player walks forward", "talking to someone runs the interact rules", "no errors logged"]));
+    expect(names).toEqual(expect.arrayContaining(["the photographed trees, rocks, grass, door, lanterns and villager are in", "the player has the chosen look", "the pointer is hidden for looking around with the mouse", "Esc frees the mouse and a click takes it back", "player walks forward", "talking to someone runs the interact rules", "no errors logged"]));
     expect(report.checks.find((c: { name: string }) => c.name === "the player has the chosen look").detail).toBe("BP_Kellan_C on SandboxCharacter_CMC_C");
     expect(report.observations.collected).toBe(3);
     expect(report.observations.won).toBe(true);

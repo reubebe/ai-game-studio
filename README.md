@@ -7,7 +7,9 @@ A modular desktop studio for building playable, editable games: Tauri 2 + React 
 | | |
 |---|---|
 | ![Thornwood Ruins](docs/images/thornwood-ruins.jpg) **3D adventure:** Thornwood Ruins (Godot) | ![Sunrise Acres](docs/images/sunrise-acres.jpg) **Farm simulation:** Sunrise Acres (Godot) |
-| ![Harbour Cup Final](docs/images/harbour-cup.jpg) **Football:** Harbour Cup Final (Godot) | ![The Unreal valley with a MetaHuman player](docs/images/unreal-valley.jpg) **Unreal Engine 5:** a MetaHuman player; the level is still simple shapes |
+| ![Harbour Cup Final](docs/images/harbour-cup.jpg) **Football:** Harbour Cup Final (Godot) | ![The realistic Unreal valley: Kellan, Elder Ama, scanned trees, rocks and grass](docs/images/unreal-valley.jpg) **Unreal Engine 5:** Kellan, Elder Ama, scanned trees, rocks and grass |
+
+**New here?** Read the [user guide](docs/user-guide/README.md) (draft).
 
 ## Status
 
@@ -64,7 +66,7 @@ export templates are missing, installs them from the Engines view's button (a 1.
 | 3D adventure (Godot): Thornwood Ruins, the same template with enemies that chase you and a staff to fight them (F or a click), hearts and a healing spring, stone blocks pushed onto pressure plates, and a sunset countdown. Any Godot 3D project can use these pieces (world editor: **Enemy**, **Pushable block**; rules: enemies, health, blocks, timers) | Ready |
 | 3D exploration in Unity: the same level and rules (objectives, Elder Ama, the shrine gate, sounds) run by a C# rule runtime, macOS build and self-test | Ready (no saved progress or Play here; those are Godot's) |
 | 3D exploration in Unreal: the same level and rules run by a C++ rule runtime in a small C++ module, packaged macOS app and self-test | Ready (no saved progress or Play here; those are Godot's) |
-| 3D exploration in Unreal, realistic people: the player is the motion-matching character from Epic's free Game Animation Sample (500+ motion-captured moves: walk, run, sprint, crouch, jump, vault) wearing its MetaHuman, Kellan, under Lumen light, volumetric clouds and height fog. The sample's content is copied (cloned, no extra space on APFS) from your copy in Documents/Unreal Projects when the project is made, and kept out of the project's snapshots | Ready (the level itself is still the basic shapes, and Elder Ama is not a MetaHuman yet) |
+| 3D exploration in Unreal, realistic people: the player is the motion-matching character from Epic's free Game Animation Sample (500+ motion-captured moves: walk, run, sprint, crouch, jump, vault) wearing its MetaHuman, Kellan, under Lumen light, volumetric clouds and height fog. The sample's content is copied (cloned, no extra space on APFS) from your copy in Documents/Unreal Projects when the project is made, and kept out of the project's snapshots | Ready. On the first build Game Studio downloads and prepares photographed trees, rocks, ferns, grass, a wooden gate and brass lanterns (Poly Haven, CC0) and Elder Ama (a Microsoft Rocketbox woman, MIT), about 390 MB once, each file checked; anything that fails falls back to simple shapes. Elder Ama is not a MetaHuman. Esc frees the mouse, a click takes it back |
 | Visual logic sandbox | Ready |
 | Creature collection, science lesson, XR valley, C++/SFML arcade | Foundations (limits listed in the app) |
 | Ayò (Yoruba mancala): two-or-three captures on the Oware engine, sources and the accounts it does not follow in `docs/rulesets/ayo.md` | Ready |
@@ -153,8 +155,9 @@ which for a cloud provider means its servers.
 - Imported models and characters are placed in Godot projects; Unity and Unreal projects import them in their own editors.
 - Realistic people in Unreal come from Epic's Game Animation Sample, which you add from Fab yourself (its licence is
   Epic's, for Unreal projects). Its content is copied into each realistic project and never into Game Studio's files.
-  Kellan's short hair (a groom) does not show in Game Studio's pictures yet, and the valley around him is still made of
-  the engine's basic shapes.
+  Kellan's groom hair cannot be drawn by Unreal on Macs (Metal SM5), so Game Studio gives him a short hair cap made from his
+  own head. The valley's trees, rocks, grass, gate, lanterns and Elder Ama are free models Game Studio downloads itself
+  (Poly Haven, CC0; Microsoft Rocketbox, MIT), credited in the project's `Content/GameStudioNature/CREDITS.txt`.
 - AI-made pictures (sprites, textures): Gemini's image models need billing enabled on the key's Google Cloud project (its
   free tier allows no image requests), and Ollama's experimental local image models are a multi-gigabyte download not
   made yet. Until one of those is set up, art comes from imports and the free library.

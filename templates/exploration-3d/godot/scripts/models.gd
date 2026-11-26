@@ -35,7 +35,7 @@ static func bounds(node: Node, xform: Transform3D = Transform3D.IDENTITY) -> AAB
 	var out := AABB()
 	var first := true
 	if node is VisualInstance3D:
-		out = t * (node as VisualInstance3D).get_aabb()
+		out = t * _drawn_box(node as VisualInstance3D)
 		first = false
 	for child in node.get_children():
 		var cb := bounds(child, t)
@@ -47,6 +47,27 @@ static func bounds(node: Node, xform: Transform3D = Transform3D.IDENTITY) -> AAB
 		else:
 			out = out.merge(cb)
 	return out
+
+
+## A mesh's box where it is drawn. A skinned mesh is drawn where its skeleton's rest pose puts it, which
+## can be far from its own box: converted Rocketbox people stood 0.86 m below their box, sunk to the knees.
+## level3d.ts gets the same from three's skinned bounding box.
+static func _drawn_box(v: VisualInstance3D) -> AABB:
+	var box := v.get_aabb()
+	var mi := v as MeshInstance3D
+	if mi == null or mi.skin == null or mi.skin.get_bind_count() == 0:
+		return box
+	var sk := mi.get_node_or_null(mi.skeleton) as Skeleton3D
+	if sk == null:
+		return box
+	var bone := mi.skin.get_bind_bone(0)
+	if bone < 0:
+		bone = sk.find_bone(mi.skin.get_bind_name(0))
+	if bone < 0 or bone >= sk.get_bone_count():
+		return box
+	# Skeleton space to the mesh's space, then the bind: where the rest pose draws the mesh.
+	var to_mesh := relative_transform(null, mi).affine_inverse() * relative_transform(null, sk)
+	return to_mesh * sk.get_bone_global_rest(bone) * mi.skin.get_bind_pose(0) * box
 
 
 ## Scales `inst` so it is `height` metres tall and stands with its lowest point on its parent's origin.

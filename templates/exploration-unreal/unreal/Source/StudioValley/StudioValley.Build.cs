@@ -7,6 +7,6 @@ public class StudioValley : ModuleRules
 	public StudioValley(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "ImageCore", "ImageWrapper", "InputCore", "Json" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "ImageCore", "ImageWrapper", "InputCore", "Json", "RHI", "RenderCore" });
 	}
 }

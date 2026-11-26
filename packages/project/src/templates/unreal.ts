@@ -73,11 +73,16 @@ export const UNREAL_SAMPLE_HOW_TO =
   "Add “Game Animation Sample” (Epic Games, free) to your library on fab.com, then in the Epic Games Launcher choose Unreal Engine › Library › Fab Library › Game Animation Sample › Create Project with version 5.8 and the suggested folder (Documents › Unreal Projects).";
 
 /** The realistic game's settings, on top of the sample's (Config/DefaultGame.ini). */
+/** Editor plugins the nature import needs (see withAnimationSample). */
+export const NATURE_PLUGINS = ["PythonScriptPlugin", "EditorScriptingUtilities", "GeometryScripting"] as const;
+
 export const UNREAL_REALISTIC_SETTINGS = `[/Script/UnrealEd.ProjectPackagingSettings]
 ; The player's character, controls and MetaHuman are named in settings only, so packaging is told to keep them.
 +DirectoriesToAlwaysCook=(Path="/Game/Blueprints")
 +DirectoriesToAlwaysCook=(Path="/Game/Input")
 +DirectoriesToAlwaysCook=(Path="/Game/MetaHumans/Kellan")
+; Game Studio's photographed trees, rocks, grass, door, lanterns and villager, named in code only.
++DirectoriesToAlwaysCook=(Path="/Game/GameStudioNature")
 
 [/Script/StudioValley.StudioGameMode]
 ; The player is the Game Animation Sample's motion-matching character with MetaHuman Kellan as its body
@@ -191,9 +196,12 @@ export function withAnimationSample(files: GeneratedFile[], sample: UnrealSample
   // Each enabled plugin with the sample's limits (for example TargetAllowList ["Editor"] for editor-only tools).
   const LIMITS = ["TargetAllowList", "TargetDenyList", "PlatformAllowList", "PlatformDenyList"] as const;
   const names = (v: unknown) => Array.isArray(v) && v.every((x) => typeof x === "string" && /^[A-Za-z0-9_]+$/.test(x));
-  const plugins = (theirs.Plugins ?? [])
+  const plugins: Record<string, unknown>[] = (theirs.Plugins ?? [])
     .filter((p) => typeof p["Name"] === "string" && /^[A-Za-z0-9_]+$/.test(p["Name"]) && p["Enabled"] === true)
     .map((p) => ({ Name: p["Name"] as string, Enabled: true, ...Object.fromEntries(LIMITS.filter((k) => names(p[k])).map((k) => [k, p[k]])) }));
+  // The editor's Python and Geometry Script import Game Studio's trees and people on the first build
+  // (src-tauri/assets/unreal_nature.py); editor only, so the game never carries them.
+  for (const Name of NATURE_PLUGINS) if (!plugins.some((p) => p.Name === Name)) plugins.push({ Name, Enabled: true, TargetAllowList: ["Editor"] });
   return [
     ...files
       .filter((f) => !f.path.startsWith(configDir))

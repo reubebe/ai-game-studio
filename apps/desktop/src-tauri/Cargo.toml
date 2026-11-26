@@ -26,6 +26,7 @@ reqwest = { version = "0.13", default-features = false, features = ["json", "nat
 sha2 = "0.11"
 # Poly Haven publishes an MD5 for every file; downloads are checked against it (and hashed with SHA-256 for the asset index).
 md-5 = "0.11"
+meshopt = "0.7"
 base64 = "0.22"
 tokio = { version = "1", features = ["process", "io-util", "time", "sync", "macros", "rt-multi-thread"] }
 uuid = { version = "1", features = ["v4"] }

@@ -66,6 +66,8 @@ public:
 
 	// What the rules can do (FStudioRules calls these).
 	void ShowMessage(const FString& Text, float Seconds);
+	/** Shows and frees the pointer (Esc), or captures it again for looking around (a click). */
+	void FreePointer(APlayerController* PC, bool bFree);
 	void ShowWin(const FString& Text);
 	bool OpenGate(const FString& Id);
 	bool IsGateOpen(const FString& Id) const;
@@ -114,6 +116,8 @@ public:
 	/** Shows the pointer and leaves it free (the built-in walker looks with the right mouse button). */
 	UPROPERTY(Config)
 	bool bShowPointer = true;
+	/** Esc gave the pointer back in a game that looks around with the mouse; a click takes it again. */
+	bool bPointerFreed = false;
 
 private:
 	void BuildLevel();
@@ -129,7 +133,19 @@ private:
 	void TeleportPlayer(ACharacter* Player, const FVector& Location) const;
 	/** Keeps the configured look on the player; returns whether it is shown. */
 	bool KeepPlayerLook(ACharacter* Player);
+	/** Short hair over the look's scalp when its own hair cannot be drawn here. */
+	void CoverHair(AActor* Look);
 	void AddRealisticSky(const FActorSpawnParameters& Params);
+	/** A photo-scanned model in /Game/GameStudioNature, or none (the simple shapes are drawn then). */
+	UStaticMesh* NatureMesh(const TCHAR* Name) const;
+	/** Draws a photo-scanned model over an object; its simple shapes stay, unseen, for collision. */
+	void Dress(AActor* Owner, const FString& Id, const TCHAR* Name, double Scale);
+	/** Draws a villager as a real person breathing in place, when the realistic people are there. */
+	void Person(AActor* Owner);
+	/** Puts a photographed surface (stone, wood) from /Game/GameStudioNature/M on a simple shape. */
+	void Surface(UStaticMeshComponent* Shape, const TCHAR* Name) const;
+	/** Grass and ferns over the ground, clear of water, zones, gates and people. */
+	void PlantGround(AActor* Ground);
 
 	TWeakObjectPtr<AActor> StudioStart;
 	TWeakObjectPtr<UChildActorComponent> LookSlot;
@@ -174,6 +190,9 @@ private:
 	struct FGate
 	{
 		TWeakObjectPtr<UStaticMeshComponent> Door;
+		/** The photographed door drawn over Door (realistic style), sinking with it. */
+		TWeakObjectPtr<UStaticMeshComponent> Look;
+		double LookZ = 0.0;
 		bool bOpen = false;
 		float Sunk = 0.f;
 		double StartZ = 0.0;
@@ -187,6 +206,10 @@ private:
 	FString ScreenshotPath;
 	/** Frames since nothing was left compiling (see Tick). */
 	int32 ScreenshotWait = 0;
+	/** -studio-screenshot-near=<object id>[@<metres>]: the picture is taken that far (6 m) south of the object. */
+	FString ScreenshotNear;
+	TArray<float> FrameTimes;
+	FVector ThreadTimes = FVector::ZeroVector;
 	int32 Frames = 0;
 	TUniquePtr<FStudioErrorLog> ErrorLog;
 };
