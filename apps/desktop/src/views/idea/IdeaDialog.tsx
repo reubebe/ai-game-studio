@@ -143,6 +143,7 @@ export function IdeaDialog() {
   return (
     <Dialog
       wide
+      keepOnEscape
       title="Start from an idea"
       onClose={() => {
         stop();
@@ -232,6 +233,11 @@ export function IdeaDialog() {
                   {lines.map((l, i) => <div key={i} className="change-line">{l}</div>)}
                 </div>
               ))}
+              {plan.skipped && plan.skipped.length > 0 && (
+                <Notice kind="warn">
+                  Left out {plan.skipped.length === 1 ? "a change" : "changes"} the template cannot make: {plan.skipped.slice(0, 3).map(plainReason).join(" · ")}
+                </Notice>
+              )}
               {warnings.length > 0 && <Notice kind="warn">Check after creating: {warnings.map((w) => w.message).join(" · ")}</Notice>}
               {plan.status === "invalid" && <Notice kind="error">The specialist's changes did not validate ({plan.run?.attempts.at(-1)?.problems.slice(0, 3).join(" · ")}). Plan again, or create the game from the plain template with New project.</Notice>}
               {plan.status === "failed" && <Notice kind="error">{plan.message}</Notice>}
@@ -245,4 +251,11 @@ export function IdeaDialog() {
       </div>
     </Dialog>
   );
+}
+
+/** Validation messages written for the assistant, reworded for the person reading the plan. */
+function plainReason(message: string): string {
+  const model = /^There is no model '([^']+)'/.exec(message);
+  if (model) return `a 3D model called "${model[1]}" (this project has none yet; you can import models in Assets after creating the game)`;
+  return message;
 }

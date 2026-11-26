@@ -580,6 +580,10 @@ test("start from an idea: the plan is shown first, then the game is created with
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByRole("button", { name: "Plan my game" })).toBeDisabled();
   await dialog.getByLabel("Describe your game").fill("A firefly collects lantern seeds on a moonlit ridge");
+  // A stray click outside, or Esc, must not throw away what was typed.
+  await page.mouse.click(5, 5);
+  await page.keyboard.press("Escape");
+  await expect(dialog.getByLabel("Describe your game")).toHaveValue("A firefly collects lantern seeds on a moonlit ridge");
   await dialog.getByRole("button", { name: "Plan my game" }).click();
   const plan = dialog.getByTestId("idea-plan");
   await expect(plan).toContainText("Lantern Ridge");

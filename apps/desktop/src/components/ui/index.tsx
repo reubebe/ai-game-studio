@@ -131,19 +131,29 @@ export function Toasts() {
   );
 }
 
-export function Dialog({ title, children, footer, onClose, wide }: { title: ReactNode; children: ReactNode; footer?: ReactNode; onClose: () => void; wide?: boolean }) {
+/**
+ * A modal dialog. Clicking outside it never closes it (a stray click lost typed text and plans); the close
+ * button does, and so does Esc unless `keepOnEscape` is set, for dialogs holding work in progress.
+ */
+export function Dialog({ title, children, footer, onClose, wide, keepOnEscape }: { title: ReactNode; children: ReactNode; footer?: ReactNode; onClose: () => void; wide?: boolean; keepOnEscape?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  const keepRef = useRef(keepOnEscape);
+  keepRef.current = keepOnEscape;
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape" && !keepRef.current) closeRef.current();
     };
     window.addEventListener("keydown", key);
-    // A dialog can mark what starts focused (data-autofocus); otherwise the first field or the main button does.
-    (ref.current?.querySelector<HTMLElement>("[data-autofocus]") ?? ref.current?.querySelector<HTMLElement>("input, select, textarea, button.btn--primary"))?.focus();
     return () => window.removeEventListener("keydown", key);
-  }, [onClose]);
+  }, []);
+  useEffect(() => {
+    // A dialog can mark what starts focused (data-autofocus); otherwise the first field or the main button does. Once, on opening.
+    (ref.current?.querySelector<HTMLElement>("[data-autofocus]") ?? ref.current?.querySelector<HTMLElement>("input, select, textarea, button.btn--primary"))?.focus();
+  }, []);
   return createPortal(
-    <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="scrim">
       <div className={`dialog ${wide ? "dialog--wide" : ""}`} role="dialog" aria-modal="true" aria-label={typeof title === "string" ? title : undefined} ref={ref}>
         <div className="dialog__header">
           <div className="dialog__title">{title}</div>

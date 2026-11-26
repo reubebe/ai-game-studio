@@ -256,6 +256,33 @@ describe("start from an idea", () => {
     expect(ideaSystemPrompt()).toMatch(/hide and seek/);
   });
 
+  it("keeps the specialist's changes that validate and lists the ones left out, when the repair still fails", async () => {
+    let designCalls = 0;
+    const generate: GenerateFn = async (req) => {
+      if (req.schemaName === "game_idea_brief") return { text: JSON.stringify(brief), provider: "t", model: "m" };
+      designCalls++;
+      return {
+        text: JSON.stringify({
+          summary: "Night theme with a trap.",
+          operations: [
+            { op: "level.settings", name: "name", value: "Moonlit Ridge" },
+            { op: "level.set", id: "no_such_object", name: "text", value: "Boo" },
+            { op: "level.settings", name: "skyTop", value: "#1b1040" },
+          ],
+        }),
+        provider: "t",
+        model: "m",
+      };
+    };
+    const plan = await planGame({ input: { idea: "night run" }, generate, registry });
+    expect(designCalls).toBe(2);
+    expect(plan.status).toBe("ready");
+    expect(plan.run?.proposal?.operations.map((o) => ("name" in o ? o.name : o.op))).toEqual(["name", "skyTop"]);
+    expect(plan.run?.result?.docs.level?.level.name).toBe("Moonlit Ridge");
+    expect(plan.skipped).toHaveLength(1);
+    expect(plan.skipped?.[0]).toMatch(/no_such_object/);
+  });
+
   it("repairs one bad brief and gives up honestly after a second", async () => {
     let n = 0;
     const generate: GenerateFn = async () => ({ text: n++ === 0 ? "{\"reply\": 1}" : "not json", provider: "t", model: "m" });

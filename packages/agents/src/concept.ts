@@ -1,8 +1,9 @@
 import { z } from "zod";
 import type { NodeRegistry } from "@gamestudio/rules-core";
 import { generateProject, type ProjectManifest } from "@gamestudio/project";
-import { agentById, type AgentDef } from "./agents";
-import type { ProjectDocs } from "./apply";
+import { agentById, allowedOperations, type AgentDef } from "./agents";
+import { applyProposal, type ApplyResult, type ProjectDocs } from "./apply";
+import type { Proposal } from "./operations";
 import { extractJson, runAgent, type AgentRun, type GenerateFn } from "./run";
 
 /**
@@ -160,6 +161,8 @@ export interface IdeaPlan {
   docs: ProjectDocs | null;
   message: string;
   model: string;
+  /** Changes the specialist proposed that did not validate and were left out of the plan, with the reason. */
+  skipped?: string[];
 }
 
 /**
@@ -209,5 +212,34 @@ export async function planGame(args: { input: IdeaInput; generate: GenerateFn; r
   args.onStage?.("design");
   const agent = agentById(template.agent);
   const run = await runAgent({ agent, request: designRequest(b), docs, registry: args.registry, generate: args.generate, author: "AI assistant ({model})" });
-  return { status: run.status, brief: b, agent, run, docs, message: run.message, model: run.attempts.at(-1)?.model ?? model };
+  const used = run.attempts.at(-1)?.model ?? model;
+  if (run.status === "invalid" && run.proposal) {
+    const salvaged = keepValidOperations(docs, run.proposal, agent, args.registry, `AI assistant (${used})`);
+    if (salvaged) {
+      const salvagedRun: AgentRun = { ...run, status: "ready", proposal: salvaged.proposal, result: salvaged.result, message: run.proposal.summary };
+      return { status: "ready", brief: b, agent, run: salvagedRun, docs, message: run.proposal.summary, model: used, skipped: salvaged.skipped };
+    }
+  }
+  return { status: run.status, brief: b, agent, run, docs, message: run.message, model: used };
+}
+
+/**
+ * When a specialist's proposal still fails after its repair attempt, keep the operations that apply cleanly, in order,
+ * and list the ones left out with the reason, rather than throwing the whole plan away. Null when nothing applies.
+ */
+export function keepValidOperations(docs: ProjectDocs, proposal: Proposal, agent: AgentDef, registry: NodeRegistry, author: string): { proposal: Proposal; result: ApplyResult; skipped: string[] } | null {
+  const opts = { allowed: allowedOperations(agent), author };
+  const kept: Proposal["operations"] = [];
+  const skipped: string[] = [];
+  let result: ApplyResult | null = null;
+  for (const op of proposal.operations) {
+    const trial = applyProposal(docs, { summary: proposal.summary, operations: [...kept, op] }, registry, opts);
+    const problem = trial.errors[0]?.message ?? trial.diagnostics.find((d) => d.severity === "error")?.message;
+    if (problem) skipped.push(problem);
+    else {
+      kept.push(op);
+      result = trial;
+    }
+  }
+  return result && kept.length ? { proposal: { summary: proposal.summary, operations: kept }, result, skipped: [...new Set(skipped)] } : null;
 }
