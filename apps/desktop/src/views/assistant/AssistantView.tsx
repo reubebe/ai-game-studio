@@ -177,6 +177,7 @@ export function AssistantView() {
   const update = (id: number, patch: (t: Turn) => Partial<Turn>) => setTurns((ts) => ts.map((t) => (t.id === id ? { ...t, ...patch(t) } : t)));
 
   const send = async () => {
+    useApp.getState().markStep("asked");
     const message = text.trim();
     if (!message || !provider || !model || thinking) return;
     const current = await collectDocs();

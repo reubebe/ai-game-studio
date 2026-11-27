@@ -157,6 +157,7 @@ function EnvRow({ icon, label, value, ok, action }: { icon: ReactNode; label: st
 
 export function HomeView() {
   const info = useApp((s) => s.info);
+  const mode = useApp((s) => s.mode);
   const setRoute = useApp((s) => s.setRoute);
   const toast = useApp((s) => s.toast);
   const openDialog = useApp((s) => s.openDialog);
@@ -328,15 +329,15 @@ export function HomeView() {
 
               <section className="card home__panel">
                 <div className="home__panel-head">
-                  <span className="section-label">This computer</span>
+                  <span className="section-label">Ready to make games?</span>
                   <Button size="small" variant="ghost" onClick={() => setRoute("engines")}>Engines</Button>
                 </div>
                 <div className="stack" style={{ gap: 2, padding: "0 6px 8px" }}>
-                  <EnvRow icon={<EnginesIcon />} label="Godot" ok={engines ? Boolean(godot) : null} value={godot ? `${godot.version} ${godot.channel} · ${godot.source}` : engines ? "Not installed. Install the official release from Engines." : "Checking…"} />
-                  <EnvRow icon={<CommitIcon />} label="Snapshots (Git)" ok={info ? info.gitAvailable : null} value={info?.gitAvailable ? "Available: every project keeps a restorable history" : "Git not found: snapshots are unavailable"} />
-                  <EnvRow icon={<BotIcon />} label="Local AI (Ollama)" ok={providers ? Boolean(ollama?.available) : null} value={ollama?.available ? ollama.models.join(", ") : ollama?.note ?? (providers ? "Not available" : "Checking…")} />
-                  <EnvRow icon={<AtomIcon />} label="Cloud AI" ok={providers ? cloud.some((c) => c.allowed && c.available) || null : null} value={cloud.some((c) => c.allowed) ? `Allowed: ${cloud.filter((c) => c.available).map((c) => c.label).join(", ") || "no keys found"}` : "Off. Turn on in Settings to send context to a cloud provider."} />
-                  <EnvRow icon={<CodeIcon />} label="App data" ok={true} value={info?.dataDir ?? ""} />
+                  <EnvRow icon={<EnginesIcon />} label="Game engine (Godot)" ok={engines ? Boolean(godot) : null} value={godot ? `Ready to run your games (Godot ${godot.version})` : engines ? "Needed for most games: install it from Engines." : "Checking…"} />
+                  <EnvRow icon={<CommitIcon />} label="Snapshots" ok={info ? info.gitAvailable : null} value={info?.gitAvailable ? "On: you can always go back to an earlier version" : "Off: Git was not found, so earlier versions are not kept"} />
+                  <EnvRow icon={<BotIcon />} label="AI on this computer" ok={providers ? Boolean(ollama?.available) : null} value={ollama?.available ? `Ready, free and private (${ollama.models[0] ?? "Ollama"})` : providers ? "Optional: install Ollama for free AI that stays on this Mac" : "Checking…"} />
+                  <EnvRow icon={<AtomIcon />} label="Cloud AI" ok={providers ? cloud.some((c) => c.allowed && c.available) || null : null} value={cloud.some((c) => c.allowed) ? `On: ${cloud.filter((c) => c.allowed && c.available).map((c) => c.label).join(", ") || "no keys found"}` : "Optional and off: allow Gemini, OpenAI or Anthropic in Settings"} />
+                  {mode !== "creator" && <EnvRow icon={<CodeIcon />} label="App data" ok={true} value={info?.dataDir ?? ""} />}
                 </div>
               </section>
             </aside>

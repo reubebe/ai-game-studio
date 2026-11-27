@@ -28,6 +28,8 @@ interface AppStore {
   setRoute: (r: Route) => void;
   setMode: (m: Mode) => void;
   setSetting: (key: string, value: unknown) => Promise<boolean>;
+  /** Ticks a first-steps item (played, changed, asked) once; the Workspace's First steps card shows the ticks. */
+  markStep: (step: "played" | "changed" | "asked") => void;
   toast: (kind: Toast["kind"], title: string, detail?: string) => void;
   dismiss: (id: number) => void;
   openDialog: (d: Dialog) => void;
@@ -48,7 +50,16 @@ export const useApp = create<AppStore>((set, get) => ({
     const saved = settings["ui.mode"];
     set({ info, settings, mode: saved === "creator" || saved === "designer" || saved === "developer" ? saved : "creator" });
   },
-  setRoute: (route) => set({ route }),
+  setRoute: (route) => {
+    set({ route });
+    if (route === "play") get().markStep("played");
+  },
+  markStep: (step) => {
+    const key = `ui.coach.${step}`;
+    const { settings } = get();
+    if (!settings || settings[key] === true || settings["ui.coach.done"] === true) return;
+    void get().setSetting(key, true);
+  },
   setMode: (mode) => {
     set({ mode });
     void get().setSetting("ui.mode", mode);

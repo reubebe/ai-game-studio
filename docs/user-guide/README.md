@@ -47,8 +47,8 @@ you clicking to do it.
 
 ![Home](images/01-home.jpg)
 
-New projects open with a **First steps** card at the top of the Workspace: **Play now**, how to change something, and
-the **Assistant**. **Got it** hides it for good.
+New projects open with a **First steps** checklist at the top of the Workspace: try it (**Play now**), change something,
+and ask the **Assistant**. Each step ticks itself when you do it, and **Got it** hides the list for good.
 
 The bar on the left switches between the main views:
 
@@ -67,6 +67,7 @@ look the same in every mode. Game Studio starts in Creator, the simplest. A note
 |---|---|---|---|
 | Rules | Plain sentences and settings | The node graph, with the Simulate tab | The graph plus a **Compiled** tab |
 | Left panel | Outline only | Adds Godot scenes and a **Files** tab | Opens on Files and adds scripts |
+| Bottom panel (Problems, Output, Activity) | Hidden, for more room | Shown | Shown |
 | Levels, farm, match, project settings | Visual editors | Visual editors | An **Editor / JSON** switch above each, and **Edit gamestudio.json** |
 | Assistant | | | Shows each applied change's before and after |
 
@@ -106,7 +107,8 @@ but uses an original name, layout and look.
 
 ![The world editor's 3D view](images/05-world-3d.jpg)
 
-Open **World layout** in the Workspace. The middle switches between **Map** (top-down) and **3D**.
+Open **World layout** in the Workspace. The middle switches between **3D** (where it starts) and **Map** (top-down); it
+remembers the one you chose last.
 
 - **Add objects** on the left: drag a tree, rock, crystal, character, enemy, block, gate, zone, water, sign or torch onto
   the map or the 3D view.

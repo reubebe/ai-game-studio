@@ -42,9 +42,10 @@ const cameras = new Map<string, CameraState>();
 const VIEW_KEY = "gamestudio.world.view";
 function readViewMode(): ViewMode {
   try {
-    return localStorage.getItem(VIEW_KEY) === "3d" ? "3d" : "map";
+    // The 3D view first: it shows the level as the game does, which is what someone new expects. The map stays one click away.
+    return localStorage.getItem(VIEW_KEY) === "map" ? "map" : "3d";
   } catch {
-    return "map";
+    return "3d";
   }
 }
 function saveViewMode(m: ViewMode) {

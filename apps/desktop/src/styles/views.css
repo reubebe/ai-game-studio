@@ -370,5 +370,11 @@ button.problem-row:hover { background: var(--bg-hover); }
 
 /* Workspace: first steps for someone new, until they dismiss it. */
 .coach { display: flex; align-items: center; gap: 16px; padding: 10px 14px; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--accent) 8%, var(--bg-1)); }
-.coach__steps { flex: 1; min-width: 0; margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; font-size: var(--text-s); color: var(--text-2); line-height: 1.45; }
+.coach__steps { flex: 1; min-width: 0; margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 3px; font-size: var(--text-s); color: var(--text-2); line-height: 1.45; }
+.coach__steps li { display: flex; gap: 8px; align-items: baseline; }
+.coach__tick { flex: none; width: 15px; height: 15px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 10px; box-shadow: inset 0 0 0 1.5px var(--line-2); color: var(--bg-0); }
+.coach__step--done .coach__tick { background: var(--accent); box-shadow: none; }
+.coach__step--done { color: var(--text-3); }
+.coach__done { flex: 1; font-size: var(--text-m); color: var(--text-2); }
+.coach--done { background: color-mix(in srgb, var(--green) 10%, var(--bg-1)); }
 .coach__steps strong { color: var(--text-1); font-weight: 600; }

@@ -13,6 +13,10 @@ const problems = new WeakMap<Page, string[]>();
 test.beforeEach(async ({ page }) => {
   const list: string[] = [];
   problems.set(page, list);
+  // Most tests drive the top-down map; the world editor opens in 3D for anyone who has not chosen (checked below).
+  await page.addInitScript(() => {
+    if (!sessionStorage.getItem("gs-test-default-view")) localStorage.setItem("gamestudio.world.view", "map");
+  });
   page.on("pageerror", (e) => list.push(`page error: ${e.message}`));
   page.on("console", (m) => {
     if (m.type() === "error") list.push(`console error: ${m.text()}`);
@@ -62,11 +66,29 @@ test("first steps: the Workspace shows what to do next until dismissed", async (
   await page.getByRole("button", { name: "Create project" }).click();
   const coach = page.getByRole("note", { name: "First steps" });
   await expect(coach).toContainText("press Play to play your game");
+  await expect(coach).toContainText("0 of 3");
+  // Creator keeps the editor's room: no Problems / Output / Activity panel.
+  await expect(page.getByRole("tab", { name: "Activity" })).toHaveCount(0);
+  await coach.getByRole("button", { name: "Play now" }).click();
+  await nav(page, "Workspace: rules, world and files");
+  await expect(coach.getByRole("listitem", { name: "Try it (done)" })).toBeVisible();
+  await expect(coach).toContainText("1 of 3");
   await coach.getByRole("button", { name: "Got it" }).click();
   await expect(coach).toHaveCount(0);
   await nav(page, "Home");
   await nav(page, "Workspace: rules, world and files");
   await expect(page.getByRole("note", { name: "First steps" })).toHaveCount(0);
+});
+
+test("the world editor opens in 3D for someone who has not chosen a view", async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 1480, height: 920 } });
+  const fresh = await context.newPage();
+  await fresh.goto("/");
+  await fresh.getByRole("button", { name: "New project" }).first().click();
+  await fresh.getByRole("dialog", { name: "New project" }).getByRole("radiogroup", { name: "Template" }).locator('input[value="exploration-3d"]').check();
+  await fresh.getByRole("button", { name: "Create project" }).click();
+  await expect(fresh.getByRole("application", { name: "3D view of the level" }).locator("canvas")).toBeVisible();
+  await context.close();
 });
 
 test("home lists ready, foundation and planned templates honestly", async ({ page }) => {

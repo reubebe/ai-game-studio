@@ -212,13 +212,15 @@ export const useProject = create<ProjectStore>((set, get) => {
       }
     },
 
-    updateDoc: (path, data) =>
+    updateDoc: (path, data) => {
       set((s) => {
         const doc = s.docs[path];
         if (!doc) return s;
         const docs = { ...s.docs, [path]: { ...doc, data, dirty: true, version: doc.version + 1 } };
         return path === MANIFEST_FILE && doc.kind === "manifest" ? { docs, manifest: data as ProjectManifest } : { docs };
-      }),
+      });
+      useApp.getState().markStep("changed");
+    },
 
     openTab: async (path) => {
       const doc = await get().loadDoc(path);

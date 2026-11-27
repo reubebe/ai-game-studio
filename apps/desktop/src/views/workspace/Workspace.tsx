@@ -304,10 +304,13 @@ export function WorkspaceView() {
                 <div className="editor-host">{doc ? <EditorFor key={doc.path} doc={doc} /> : <Empty icon={<FileIcon />} title="Nothing open">Choose an item in the outline to open it.</Empty>}</div>
               </div>
             </Panel>
-            <Separator className="sep sep--h" />
-            <Panel id="bottom" defaultSize={120} minSize={34} collapsible>
-              <BottomPanel />
-            </Panel>
+            {/* Problems, output and the activity log are for Designer and Developer; Creator keeps the room for the editor. */}
+            {mode !== "creator" && <Separator className="sep sep--h" />}
+            {mode !== "creator" && (
+              <Panel id="bottom" defaultSize={120} minSize={34} collapsible>
+                <BottomPanel />
+              </Panel>
+            )}
           </Group>
         </Panel>
       </Group>
@@ -320,24 +323,42 @@ export function WorkspaceView() {
  * do each step.
  */
 function Coach() {
-  const done = useApp((s) => s.settings["ui.coach.done"] === true);
+  const settings = useApp((s) => s.settings);
   const setSetting = useApp((s) => s.setSetting);
   const setRoute = useApp((s) => s.setRoute);
   const manifest = useProject((s) => s.manifest);
-  if (done || !manifest) return null;
+  if (!settings || settings["ui.coach.done"] === true || !manifest) return null;
   const board = manifest.engine.id === "studio-board";
-  const change = board ? "open the rules and change a setting, such as how many seeds each pit starts with" : "drag something from Add objects onto the map, or change a setting on the right";
+  const change = board ? "open the rules and change a setting, such as how many seeds each pit starts with" : "drag something from Add objects into the level, or change a setting on the right";
+  const steps = [
+    { key: "played", title: "Try it", text: <>press <strong>Play</strong> to play your game.</> },
+    { key: "changed", title: "Change it", text: <>{change}.</> },
+    { key: "asked", title: "Ask for help", text: <>the <strong>Assistant</strong> makes changes for you, for example "make the player a little faster".</> },
+  ] as const;
+  const ticked = steps.filter((s) => settings[`ui.coach.${s.key}`] === true).length;
+  const all = ticked === steps.length;
   return (
-    <div className="coach" role="note" aria-label="First steps">
-      <ol className="coach__steps">
-        <li><strong>Try it:</strong> press <strong>Play</strong> to play your game.</li>
-        <li><strong>Change it:</strong> {change}.</li>
-        <li><strong>Ask for help:</strong> the <strong>Assistant</strong> makes changes for you, for example "make the player a little faster".</li>
-      </ol>
+    <div className={`coach ${all ? "coach--done" : ""}`} role="note" aria-label="First steps">
+      {all ? (
+        <div className="coach__done"><strong>You've played, changed and asked.</strong> That's how every game here is made: keep changing things and pressing Play.</div>
+      ) : (
+        <ol className="coach__steps">
+          {steps.map((s) => {
+            const done = settings[`ui.coach.${s.key}`] === true;
+            return (
+              <li key={s.key} className={done ? "coach__step--done" : ""} aria-label={`${s.title}${done ? " (done)" : ""}`}>
+                <span className="coach__tick" aria-hidden="true">{done ? "✓" : ""}</span>
+                <span><strong>{s.title}:</strong> {s.text}</span>
+              </li>
+            );
+          })}
+        </ol>
+      )}
       <div className="row" style={{ gap: 6, flex: "none" }}>
-        <Button size="small" variant="primary" icon={<PlayIcon />} onClick={() => setRoute("play")}>Play now</Button>
-        <Button size="small" icon={<AssistantIcon />} onClick={() => setRoute("assistant")}>Assistant</Button>
-        <Button size="small" variant="ghost" onClick={() => void setSetting("ui.coach.done", true)}>Got it</Button>
+        {!all && <span className="xsmall muted">{ticked} of {steps.length}</span>}
+        {!all && <Button size="small" variant="primary" icon={<PlayIcon />} onClick={() => setRoute("play")}>Play now</Button>}
+        {!all && <Button size="small" icon={<AssistantIcon />} onClick={() => setRoute("assistant")}>Assistant</Button>}
+        <Button size="small" variant={all ? "primary" : "ghost"} onClick={() => void setSetting("ui.coach.done", true)}>{all ? "Done" : "Got it"}</Button>
       </div>
     </div>
   );
