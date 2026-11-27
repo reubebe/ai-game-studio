@@ -35,7 +35,8 @@ export function IdeaDialog() {
   const usable = useMemo(() => (providers ?? []).filter((p) => p.allowed && p.available), [providers]);
   const [providerId, setProviderId] = useState("");
   const [model, setModel] = useState("");
-  const [idea, setIdea] = useState("");
+  const startIdea = useApp((s) => (s.dialog?.kind === "idea" ? s.dialog.idea : undefined));
+  const [idea, setIdea] = useState(startIdea ?? "");
   const [link, setLink] = useState("");
   const [parent, setParent] = useState(info?.defaultProjectsDir ?? "");
   const [stage, setStage] = useState<Stage>("idle");

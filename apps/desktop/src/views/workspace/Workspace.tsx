@@ -15,8 +15,8 @@ import { useApp } from "../../state/app";
 import { useProject, type Doc } from "../../state/project";
 import { useFocus } from "../../state/focus";
 import { useRuns } from "../../state/runs";
-import { Empty, IconButton, Segmented, formatWhen } from "../../components/ui";
-import { BookIcon, BoxIcon, ChevronDownIcon, ChevronRightIcon, CloseIcon, CodeFileIcon, ErrorIcon, FileIcon, FolderIcon, GraphIcon, InfoIcon, JsonFileIcon, LessonIcon, MapIcon, OkIcon, SettingsIcon, SlidersIcon, SwordsIcon, TextFileIcon, TrashIcon, TrophyIcon, SproutIcon, WarnIcon, AssetsIcon } from "../../components/icons";
+import { Button, Empty, IconButton, Segmented, formatWhen } from "../../components/ui";
+import { AssistantIcon, BookIcon, BoxIcon, PlayIcon, ChevronDownIcon, ChevronRightIcon, CloseIcon, CodeFileIcon, ErrorIcon, FileIcon, FolderIcon, GraphIcon, InfoIcon, JsonFileIcon, LessonIcon, MapIcon, OkIcon, SettingsIcon, SlidersIcon, SwordsIcon, TextFileIcon, TrashIcon, TrophyIcon, SproutIcon, WarnIcon, AssetsIcon } from "../../components/icons";
 import { RuleEditor } from "../rules/RuleEditor";
 import { WorldEditor } from "../world/WorldEditor";
 import { LevelEditor } from "../level/LevelEditor";
@@ -87,7 +87,8 @@ function Outline() {
       : unrealDir
         ? files.filter((f) => f.kind === "file" && f.path.startsWith(`${unrealDir}/Source/`) && /\.(h|cpp)$/.test(f.path))
         : [];
-  const docsMd = files.filter((f) => f.kind === "file" && f.path.endsWith(".md"));
+  // Documents that came with add-ons (godot/addons/...) are someone else's notes, not this game's.
+  const docsMd = files.filter((f) => f.kind === "file" && f.path.endsWith(".md") && !f.path.includes("/addons/") && (mode !== "creator" || !f.path.includes("/")));
   return (
     <div className="panel__body">
       {group("Project", [item(MANIFEST_FILE, "Project settings", manifest.title, <SettingsIcon />)])}
@@ -98,7 +99,7 @@ function Outline() {
       ])}
       {mode !== "creator" && group("Godot scenes", scenes.map((f) => item(f.path, f.path.split("/").pop()!, f.path, <BoxIcon />)))}
       {mode === "developer" && group("Scripts", scripts.map((f) => item(f.path, f.path.split("/").pop()!, f.path, <CodeFileIcon />)))}
-      {group("Documents", docsMd.map((f) => item(f.path, f.path.split("/").pop()!, f.path, <BookIcon />)))}
+      {group("Documents", docsMd.map((f) => item(f.path, f.path === "README.md" ? "About this game" : f.path.split("/").pop()!, f.path, <BookIcon />)))}
     </div>
   );
 }
@@ -299,6 +300,7 @@ export function WorkspaceView() {
                     </div>
                   ))}
                 </div>
+                <Coach />
                 <div className="editor-host">{doc ? <EditorFor key={doc.path} doc={doc} /> : <Empty icon={<FileIcon />} title="Nothing open">Choose an item in the outline to open it.</Empty>}</div>
               </div>
             </Panel>
@@ -309,6 +311,34 @@ export function WorkspaceView() {
           </Group>
         </Panel>
       </Group>
+    </div>
+  );
+}
+
+/**
+ * First steps for someone new: shown in the Workspace until dismissed (setting "ui.coach.done"), with buttons that
+ * do each step.
+ */
+function Coach() {
+  const done = useApp((s) => s.settings["ui.coach.done"] === true);
+  const setSetting = useApp((s) => s.setSetting);
+  const setRoute = useApp((s) => s.setRoute);
+  const manifest = useProject((s) => s.manifest);
+  if (done || !manifest) return null;
+  const board = manifest.engine.id === "studio-board";
+  const change = board ? "open the rules and change a setting, such as how many seeds each pit starts with" : "drag something from Add objects onto the map, or change a setting on the right";
+  return (
+    <div className="coach" role="note" aria-label="First steps">
+      <ol className="coach__steps">
+        <li><strong>Try it:</strong> press <strong>Play</strong> to play your game.</li>
+        <li><strong>Change it:</strong> {change}.</li>
+        <li><strong>Ask for help:</strong> the <strong>Assistant</strong> makes changes for you, for example "make the player a little faster".</li>
+      </ol>
+      <div className="row" style={{ gap: 6, flex: "none" }}>
+        <Button size="small" variant="primary" icon={<PlayIcon />} onClick={() => setRoute("play")}>Play now</Button>
+        <Button size="small" icon={<AssistantIcon />} onClick={() => setRoute("assistant")}>Assistant</Button>
+        <Button size="small" variant="ghost" onClick={() => void setSetting("ui.coach.done", true)}>Got it</Button>
+      </div>
     </div>
   );
 }

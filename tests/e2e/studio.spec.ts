@@ -36,12 +36,38 @@ async function createProject(page: Page, template: string) {
   await pickTemplate(page, template);
   await page.getByRole("button", { name: "Create project" }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
+  // New users start in Creator; these tests use the Designer's graph and simulator.
+  await setMode(page, "Designer");
 }
 
 async function seedTotal(page: Page, board = "Oware board"): Promise<number> {
   const labels = await page.getByRole("group", { name: board }).locator("[aria-label]").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label") ?? ""));
   return labels.reduce((sum, l) => sum + Number(/(\d+) seeds|captured (\d+)/.exec(l)?.slice(1).find(Boolean) ?? 0), 0);
 }
+
+test("first run: Creator mode, an idea box with examples, picture cards and the Godot setup step", async ({ page }) => {
+  await expect(page.getByRole("group", { name: "Work mode" }).getByRole("button", { name: "Creator" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: /^3D exploration: Sun Crystal Valley/ }).locator("img")).toHaveCount(1);
+  await page.getByRole("button", { name: "Hide and seek in a misty forest" }).click();
+  await expect(page.getByLabel("Describe a game to make")).toHaveValue("Hide and seek in a misty forest");
+  await page.getByRole("button", { name: "Start from an idea" }).click();
+  await expect(page.getByRole("dialog").getByLabel("Describe your game")).toHaveValue("Hide and seek in a misty forest");
+  await page.getByRole("dialog").getByRole("button", { name: "Close" }).click();
+  await expect(page.getByRole("button", { name: "Install Godot" })).toBeVisible();
+});
+
+test("first steps: the Workspace shows what to do next until dismissed", async ({ page }) => {
+  await page.getByRole("button", { name: "New project" }).first().click();
+  await pickTemplate(page, "platformer-2d");
+  await page.getByRole("button", { name: "Create project" }).click();
+  const coach = page.getByRole("note", { name: "First steps" });
+  await expect(coach).toContainText("press Play to play your game");
+  await coach.getByRole("button", { name: "Got it" }).click();
+  await expect(coach).toHaveCount(0);
+  await nav(page, "Home");
+  await nav(page, "Workspace: rules, world and files");
+  await expect(page.getByRole("note", { name: "First steps" })).toHaveCount(0);
+});
 
 test("home lists ready, foundation and planned templates honestly", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Oware (Abapa)" })).toBeEnabled();

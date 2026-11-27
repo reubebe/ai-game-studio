@@ -47,9 +47,13 @@ you clicking to do it.
 
 ![Home](images/01-home.jpg)
 
+New projects open with a **First steps** card at the top of the Workspace: **Play now**, how to change something, and
+the **Assistant**. **Got it** hides it for good.
+
 The bar on the left switches between the main views:
 
-- **Home**: your projects, the templates, and what is installed on this computer.
+- **Home**: a box where you describe a game to make, your projects, the starter games (with a picture of each), and
+  what is installed on this computer. If Godot is missing, Home shows an **Install Godot** button first.
 - **Workspace**: the project's files, rules, world map and editors.
 - **Play**: runs the game, exports it and shows its output.
 - **Assets**: your imported files and the free library.
@@ -57,7 +61,7 @@ The bar on the left switches between the main views:
 - **Engines**, **Plugins** and **Settings** sit at the bottom.
 
 At the top right, **Creator**, **Designer** and **Developer** change how much the **Workspace** shows; the other views
-look the same in every mode. A note says what changed each time you switch.
+look the same in every mode. Game Studio starts in Creator, the simplest. A note says what changed each time you switch.
 
 | | Creator | Designer | Developer |
 |---|---|---|---|
@@ -77,7 +81,7 @@ valid version is kept. All three modes edit the same project, so you can switch 
 
 ![New project](images/02-new-project.jpg)
 
-On Home, click **New project**, pick a template, give it a title and a folder, then **Create project**. Templates marked
+On Home, click a starter game's picture (or **New project**), pick a template, give it a title and a folder, then **Create project**. Templates marked
 *Plays in studio* run inside Game Studio. The others show the engine they need. If that engine is missing you can still
 create and edit the project, and the dialog links to the Engines view.
 
@@ -88,7 +92,7 @@ listed in the app.
 
 ![Start from an idea](images/03-start-from-idea.jpg)
 
-**Start from an idea** takes a sentence or two about your game, and optionally a link to a page about it. The assistant
+Type your idea in the box at the top of Home (or click one of the **Try** examples) and press **Start from an idea**. It takes a sentence or two about your game, and optionally a link to a page about it. The assistant
 picks the closest template, writes a short design brief and lists every change it would make to the starting level.
 Nothing is created until you click **Create this game**. If you name an existing game, the plan keeps its kind of play
 but uses an original name, layout and look.

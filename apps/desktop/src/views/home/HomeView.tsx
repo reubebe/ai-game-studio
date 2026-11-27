@@ -5,6 +5,13 @@ import { useApp } from "../../state/app";
 import { useProject } from "../../state/project";
 import { godotInstall, useEnv } from "../../state/env";
 import { ENGINE_LABEL } from "./labels";
+import pictureExploration from "../../assets/templates/exploration-3d.jpg";
+import pictureAdventure from "../../assets/templates/adventure-3d.jpg";
+import picturePlatformer from "../../assets/templates/platformer-2d.jpg";
+import pictureFarm from "../../assets/templates/farm-sim.jpg";
+import pictureFootball from "../../assets/templates/football.jpg";
+import pictureUnrealRealistic from "../../assets/templates/exploration-unreal-realistic.jpg";
+import pictureOware from "../../assets/templates/oware.jpg";
 import { Button, IconButton, formatWhen } from "../../components/ui";
 import { AtomIcon, BirdIcon, CloseIcon, CodeIcon, CubeIcon, DiceIcon, EditIcon, EnginesIcon, GameIcon, GemIcon, GraphIcon, LessonIcon, OpenIcon, PlayIcon, PlusIcon, SwordsIcon, XrIcon, CircleIcon, CommitIcon, BotIcon, WandIcon, TrophyIcon, SproutIcon, PersonIcon } from "../../components/icons";
 
@@ -31,6 +38,27 @@ const TEMPLATE_ICON: Partial<Record<string, ReactNode>> = {
   "creature-collection": <BirdIcon />,
 };
 const iconFor = (id: string, category: Category): ReactNode => TEMPLATE_ICON[id] ?? CATEGORY_ICON[category];
+/** Pictures of the games themselves (assets/templates), so a card shows what you will play. */
+const PICTURE: Partial<Record<string, string>> = {
+  "exploration-3d": pictureExploration,
+  "adventure-3d": pictureAdventure,
+  "platformer-2d": picturePlatformer,
+  "farm-sim": pictureFarm,
+  football: pictureFootball,
+  "exploration-unreal-realistic": pictureUnrealRealistic,
+  "oware-abapa": pictureOware,
+  "oware-namnam": pictureOware,
+  ayo: pictureOware,
+};
+/** Engines a beginner needs nothing extra for: these are the starter games. Unity and Unreal templates are listed apart. */
+const EXPERT_ENGINES = new Set<TemplateInfo["engine"]>(["unity", "unreal", "cpp-sfml"]);
+/** Ideas to try, filled into the idea box with one click. */
+const IDEA_EXAMPLES = [
+  "A cat sneaks through a garden finding hidden fish",
+  "Hide and seek in a misty forest",
+  "A beach football match between two islands",
+  "Grow mangoes and sell them at the market",
+];
 /** What each kind of template is called in the gallery's filter. */
 const CATEGORY_LABEL: Record<Category, string> = {
   traditional: "Board games",
@@ -69,8 +97,8 @@ function TemplateCard({ t }: { t: TemplateInfo }) {
       onClick={() => openDialog({ kind: "new-project", templateId: t.id })}
       aria-label={`${t.title}${planned ? " (planned)" : ""}`}
     >
-      <div className="template-card__art" style={{ ["--hue" as string]: CATEGORY_HUE[t.category] }}>
-        {iconFor(t.id, t.category)}
+      <div className={`template-card__art ${PICTURE[t.id] ? "template-card__art--picture" : ""}`} style={{ ["--hue" as string]: CATEGORY_HUE[t.category] }}>
+        {PICTURE[t.id] ? <img src={PICTURE[t.id]} alt="" loading="lazy" /> : iconFor(t.id, t.category)}
       </div>
       <div className="template-card__body">
         <div className="row" style={{ gap: 6 }}>
@@ -94,7 +122,7 @@ function ProjectCard({ r, isOpen, onPlay, onEdit, onForget }: { r: RecentProject
   const missing = !r.exists;
   return (
     <div className={`project-card card ${isOpen ? "project-card--open" : ""} ${missing ? "project-card--missing" : ""}`} data-testid="project-card">
-      <div className="project-card__art" style={{ ["--hue" as string]: CATEGORY_HUE[category] }}>{iconFor(r.template, category)}</div>
+      <div className={`project-card__art ${PICTURE[r.template] ? "project-card__art--picture" : ""}`} style={{ ["--hue" as string]: CATEGORY_HUE[category] }}>{PICTURE[r.template] ? <img src={PICTURE[r.template]} alt="" loading="lazy" /> : iconFor(r.template, category)}</div>
       <div className="project-card__body">
         <div className="project-card__head">
           <span className="project-card__title truncate" data-tip={r.path}>{r.title}</span>
@@ -135,6 +163,7 @@ export function HomeView() {
   const open = useProject((s) => s.open);
   const openRoot = useProject((s) => s.root);
   const [kind, setKind] = useState<Category | "all">("all");
+  const [ideaText, setIdeaText] = useState("");
   const [allRecents, setAllRecents] = useState(false);
   const engines = useEnv((s) => s.engines);
   const providers = useEnv((s) => s.providers);
@@ -147,7 +176,11 @@ export function HomeView() {
   // The kinds present, in the order they first appear, for the gallery's filter.
   const kinds = useMemo(() => [...new Set(buildable.map((t) => t.category))], [buildable]);
   const shownKind = (t: TemplateInfo) => kind === "all" || t.category === kind;
-  const ready = TEMPLATES.filter((t) => t.status === "ready" && shownKind(t));
+  // Games you walk, jump and kick around in first (they have pictures), then the board games and the logic sandbox.
+  const firstShown = ["exploration-3d", "adventure-3d", "platformer-2d", "farm-sim", "football"];
+  const rank = (t: TemplateInfo) => (firstShown.includes(t.id) ? firstShown.indexOf(t.id) : firstShown.length);
+  const ready = TEMPLATES.filter((t) => t.status === "ready" && shownKind(t) && !EXPERT_ENGINES.has(t.engine)).sort((a, b) => rank(a) - rank(b));
+  const expert = TEMPLATES.filter((t) => t.status === "ready" && shownKind(t) && EXPERT_ENGINES.has(t.engine));
   const foundations = TEMPLATES.filter((t) => t.status === "foundation" && shownKind(t));
   const planned = TEMPLATES.filter((t) => t.status === "planned");
   const godot = godotInstall(engines);
@@ -175,22 +208,43 @@ export function HomeView() {
       <div className="view__body view__body--padded">
         <div className="page home">
           <section className="home__hero">
-            <div>
-              <h1 className="home__title">Build games you can play, edit and understand.</h1>
-              <p className="home__lead">Start from a template, change it with visual rules or the world map, ask the assistant for help, and run it in Godot. Every change stays editable.</p>
+            <div className="stack" style={{ gap: 14, flex: 1, minWidth: 0 }}>
+              <div>
+                <h1 className="home__title">Make your own game.</h1>
+                <p className="home__lead">Pick a game below and press Play, or describe the game you want and the assistant builds a first version. You can change everything afterwards.</p>
+              </div>
+              <form
+                className="idea-box"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  openDialog({ kind: "idea", idea: ideaText.trim() });
+                }}
+              >
+                <WandIcon />
+                <input className="idea-box__input" aria-label="Describe a game to make" placeholder="Describe a game, for example: a cat sneaks through a garden finding hidden fish" value={ideaText} maxLength={2000} onChange={(e) => setIdeaText(e.target.value)} />
+                <Button type="submit" variant="primary" icon={<WandIcon />} tip="The assistant picks a starter game and plans changes; nothing is made until you approve">Start from an idea</Button>
+              </form>
+              <div className="row row--wrap" style={{ gap: 6 }}>
+                <span className="xsmall muted">Try:</span>
+                {IDEA_EXAMPLES.map((x) => <button key={x} type="button" className="chip" onClick={() => setIdeaText(x)}>{x}</button>)}
+              </div>
             </div>
-            <div className="row" style={{ gap: 8 }}>
-              <Button variant="primary" size="large" icon={<PlusIcon />} onClick={() => openDialog({ kind: "new-project" })}>
-                New project
-              </Button>
-              <Button size="large" icon={<WandIcon />} onClick={() => openDialog({ kind: "idea" })} tip="Describe a game or paste a link; the assistant plans an original first version from a template">
-                Start from an idea
-              </Button>
-              <Button size="large" icon={<OpenIcon />} onClick={() => void openFolder()}>
-                Open folder
-              </Button>
+            <div className="stack" style={{ gap: 8, flex: "none" }}>
+              <Button size="large" icon={<PlusIcon />} onClick={() => openDialog({ kind: "new-project" })}>New project</Button>
+              <Button size="large" variant="ghost" icon={<OpenIcon />} onClick={() => void openFolder()}>Open folder</Button>
             </div>
           </section>
+
+          {engines && !godot && (
+            <section className="setup-card card" aria-label="Set up">
+              <EnginesIcon />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="setup-card__title">One quick step before you play</div>
+                <div className="small muted">Most games here run on Godot, a free game engine. Game Studio downloads the official version and checks it (about 150 MB). Board games already work without it.</div>
+              </div>
+              <Button variant="primary" onClick={() => setRoute("engines")}>Install Godot</Button>
+            </section>
+          )}
 
           {recents !== null && recents.length > 0 && (
             <section className="stack" aria-label="Continue" data-testid="home-continue">
@@ -222,7 +276,7 @@ export function HomeView() {
             <div className="stack" style={{ gap: 26 }}>
               <section className="stack">
                 <div className="row row--wrap" style={{ justifyContent: "space-between", gap: 10 }}>
-                  <div className="section-label">{recents && recents.length > 0 ? "Start a new game" : "Ready to play"}</div>
+                  <div className="section-label">{recents && recents.length > 0 ? "Start a new game" : "Starter games"}</div>
                   <div className="chips" role="group" aria-label="Kinds of game">
                     <button type="button" className="chip" aria-pressed={kind === "all"} onClick={() => setKind("all")}>All <span className="chip__count">{buildable.length}</span></button>
                     {kinds.map((k) => (
@@ -234,6 +288,13 @@ export function HomeView() {
                 </div>
                 {ready.length > 0 ? <div className="template-grid">{ready.map((t) => <TemplateCard key={t.id} t={t} />)}</div> : <div className="xsmall muted">No ready templates of this kind yet; see the foundations below.</div>}
               </section>
+              {expert.length > 0 && <section className="stack">
+                <div className="row">
+                  <div className="section-label">For Unity and Unreal</div>
+                  <span className="xsmall muted">The same valley in other engines. They need Unity or Unreal installed and take longer to build.</span>
+                </div>
+                <div className="template-grid">{expert.map((t) => <TemplateCard key={t.id} t={t} />)}</div>
+              </section>}
               {foundations.length > 0 && <section className="stack">
                 <div className="row">
                   <div className="section-label">Foundations</div>

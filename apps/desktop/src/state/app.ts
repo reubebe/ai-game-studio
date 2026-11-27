@@ -13,7 +13,7 @@ export interface Toast {
 
 export type Dialog =
   | { kind: "new-project"; templateId?: string }
-  | { kind: "idea" }
+  | { kind: "idea"; idea?: string }
   | { kind: "snapshot" }
   | { kind: "confirm"; title: string; body: string; details?: string[]; confirmLabel: string; danger?: boolean; onConfirm: () => void | Promise<void>; onCancel?: () => void };
 
@@ -40,13 +40,13 @@ export const useApp = create<AppStore>((set, get) => ({
   info: null,
   settings: {},
   route: "home",
-  mode: "designer",
+  mode: "creator",
   toasts: [],
   dialog: null,
   boot: async () => {
     const [info, settings] = await Promise.all([backend.appInfo(), backend.settingsGet()]);
     const saved = settings["ui.mode"];
-    set({ info, settings, mode: saved === "creator" || saved === "designer" || saved === "developer" ? saved : "designer" });
+    set({ info, settings, mode: saved === "creator" || saved === "designer" || saved === "developer" ? saved : "creator" });
   },
   setRoute: (route) => set({ route }),
   setMode: (mode) => {
