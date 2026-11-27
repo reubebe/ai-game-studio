@@ -2,7 +2,9 @@
 
 A modular desktop studio for building playable, editable games: Tauri 2 + React + TypeScript, with Godot 4.7.2 as the primary engine, visual rule graphs that compile to an engine-neutral IR, and an optional, permission-scoped AI assistant.
 
-![Game Studio with the Sun Crystal Valley game running inside its Play view](docs/images/game-studio.jpg)
+![Game Studio's Home: describe a game to make, or pick a starter game](docs/images/game-studio-home.jpg)
+
+![Sun Crystal Valley running inside Game Studio's Play view](docs/images/game-studio.jpg)
 
 | | |
 |---|---|
